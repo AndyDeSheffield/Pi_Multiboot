@@ -34,7 +34,8 @@ It contains the UEFI bootloader and the **grub** binary and **grub.cfg** which t
 
 ## How it works
 The image below describes the flow of the boot process.
-_add in link_ 
+
+[boot process](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/bootflow.jpg?raw=true) 
 1. The Pi firmware loads the uefi firmware in the boot partition. Note that the (provided) config.txt file used here is minimal. \
 The dtb properties and any overlays along with overlay properties in the original image boot sector config.txt are used to create a pre-merged dtb file for grub. However it is possible to set any global non-dtb properties here, although they will be set across all images.
 2. the uefi firmware loads [**shellaa64.efi** by pbatard](https://github.com/pbatard/UEFI-Shell/release) renaomed as BOOTAA64.EFI. The purpose of this is just to introduce a delay and then request the uefi software to rescan for disk partitions in order to accomodate slow disks. It may not be necessary, in which case you can rename grub.efi toBOOTAA64.EFI and take this stage out.

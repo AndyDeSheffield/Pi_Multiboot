@@ -1,0 +1,3 @@
+# Ignore multiboot build output directories
+create_structure/
+create_images/
