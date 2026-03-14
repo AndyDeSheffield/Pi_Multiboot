@@ -1,2 +1,0 @@
-"C:\Program Files\Pandoc\Pandoc" -f gfm README.md -o output.html 
-"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe" --user-style-sheet pdf.css --margin-top 10mm --margin-bottom 10mm --margin-left 10mm --margin-right 10mm --no-stop-slow-scripts output.html output.pdf 
