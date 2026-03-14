@@ -52,9 +52,10 @@ Files:
 
 # 4. BSD-2-Clause-Patent Components (EDK2/UEFI)
 
-UEFI Shell and other EDK2-derived binaries.
+UEFI Shell and other EDK2-derived binaries. (acknowledgements to [the Pi Firmware Task Force](https://github.com/pftf))
 
 Renamed files:
+
 - shell.efi renamed to BOOTAA64.EFI` (acknowledgements to [Pbatard](https://github.com/pbatard/UEFI-Shell/tree/main))
  
 
@@ -63,7 +64,7 @@ Renamed files:
 # 5. GRUB-3.0+ Components (GRUB EFI)
 
 Files:
-- `grubaa64.efi` (acknowledgements to [the Pi Firmware Task Force](https://github.com/pftf))
+- `grubaa64.efi` 
 
 ---
 
