@@ -1,7 +1,9 @@
-# A Novel Multi-Boot Architecture for the Raspberry Pi
+# An Alternative Multi-Boot Architecture for the Raspberry Pi
 ## Introduction
-First a **disclaimer**. This project is very much alpha and was something to occupy me during the winter months. I wouldn't touch this at all unless you are fairly familiar with how the Raspbery pi boots. \
+First a **disclaimer**. This project is somewhere between alpha and beta and was something to occupy me during the winter months. I wouldn't touch this at all unless you are fairly familiar with how the Raspbery pi boots. \
+
 I wanted to create a multi-boot system that had the following properties:- 
+
 -  boots **.img** files rather than physical partitions.
 -  All images would use their own kernels and their own dtb structure(base,overlay,properties)
 -  Images could be anywhere, on any disk or any partition
@@ -11,12 +13,14 @@ I wanted to create a multi-boot system that had the following properties:-
 
 ## Limitations
 There are some limitations to what this system will boot 
+
 -  The kernel of the image must include a uefi stub as this project uses the uefi bootloaders created by the [Pi Firmware Task Force](https://github.com/pftf)
 -  64 bit images only. This is a little limiting for the pi3b
 -  The system can have images for multiple devices but the single boot partition has to be device specific
 -  Booting of some of the more exotic images like lineage will not work
 -  Only very basic initramfs systems like the Ubuntu one which contains modules but no init script are supported
 ### Tested images
+
 -  pi3b
    -  Raspberry Pi OS (64-bit)Trixie
    -  Raspberry PI OS Lite (64 bit)
@@ -27,6 +31,7 @@ There are some limitations to what this system will boot
    -  Ubuntu Server 25.10 (64 bit)
 ## Disk Structure 
 The disk structure is the following :-
+
 1. A per device **REALBOOT** partition. This can be on a master drive if you have all the same hardware type or on, for example, its own USB key or microSD with a common drive for other partitions if you want to boot images for the Pi3B and Pi4 on the same master disk \
 It contains the UEFI bootloader and the **grub** binary and **grub.cfg** which the multiboot system relies upon
 2. A single systemwide **System** partition. This contains the logic for the multiboot process
@@ -38,6 +43,7 @@ to the init process in the false Root partition which loop mounts the image of t
 The image below describes the flow of this boot process in more detail.
 
 ![boot process](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/bootflow.jpg?raw=true) 
+
 1. The Pi firmware loads the uefi firmware in the boot partition. Note that the (provided) config.txt file used here is minimal. \
 The dtb properties and any overlays along with overlay properties in the original image boot sector config.txt are used to create a pre-merged dtb file for grub. However it is possible to set any global non-dtb properties here, although they will be set across all images.
 2. the uefi firmware loads [**shellaa64.efi** by pbatard](https://github.com/pbatard/UEFI-Shell/release) renaomed as BOOTAA64.EFI. The purpose of this is just to introduce a delay and then request the uefi software to rescan for disk partitions in order to accomodate slow disks. It may not be necessary, in which case you can rename grub.efi toBOOTAA64.EFI and take this stage out.
@@ -48,6 +54,7 @@ The dtb properties and any overlays along with overlay properties in the origina
 7. Second stage boot continues as per normal
 ## Tools
 The following are provided:-
+
 1. A shell script **multiboot-build.sh** which can create any combination of partitions for BOOT (called REALBOOT),SYSTEM, and IMAGES on a removable device. This also installs tar archives for the model specific boot partition and for the system partition 
 2. A shell script  **makeimage.sh** to make a blank **.img** file of the desired size in MB
 3. A shell script **attachimage.sh** to loop mount an image file (optionally mounting t he partitions if there are any)
@@ -55,6 +62,7 @@ The following are provided:-
 5. A modified  raspi-imager **raspi-loopimager** bundle for arm and intel that allows imaging to a loop mount
 6. A tool for arm and intel **makedtb** which scans for and parses the config.txt in an image boot sector and creates merged dtb with all (main) overlays applied and properties (base and overlays) set
 7. A script **installimage.sh** which uses the above tools and which 
+
     - creates a blank image file of requested size and name in a target directory of the same name
 	- mounts that image file as a loop device
 	- runs raspi_imager to install the requested image to the loop device

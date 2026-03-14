@@ -1,3 +1,0 @@
-sudo tar -xzf /mnt/wdmycloud/pi/Pi_Multiboot/MultiBoot_Admin_os/MultiBoot_Admin_os.tar.gz \
-    -C /mnt/realimages
-

@@ -1,0 +1,17 @@
+body {
+    font-family: Arial, sans-serif;
+    font-size: 14pt;
+    line-height: 1.5;
+    margin: 10mm;
+}
+
+h1, h2, h3 {
+    font-family: Arial, sans-serif;
+    margin-top: 14pt;
+    margin-bottom: 6pt;
+}
+
+pre, code {
+    font-family: Consolas, monospace;
+    font-size: 12pt;
+}

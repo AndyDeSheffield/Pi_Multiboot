@@ -41,11 +41,11 @@ Options:
 
   -t=<device>       Target removable device (e.g. -t=/dev/sdb)
 
-  -m=<model>        Model selector (e.g. pi3b, pi4)
+  -m=<model>        Model selector (e.g. pi3b, pi4, pi5)
                     Boot tarball becomes: boot<model>.tar.gz
 
-  -b                Create REALBOOT partition (default 300M)
-  -b=<size>         Create REALBOOT with custom size
+  -b                Create BOOTPIn partition (default 300M) eg BOOTPI4
+  -b=<size>         Create BOOTPIn with custom size
 
   -s                Create SYSTEM partition (default 2G)
   -s=<size>         Create SYSTEM with custom size
