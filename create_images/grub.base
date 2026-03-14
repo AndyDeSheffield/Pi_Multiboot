@@ -1,0 +1,20 @@
+ 
+    insmod part_msdos
+    insmod ext2
+    search --file /${osname}/${osname}.img --set=targetdev
+    probe --set=target_partuuid --part-uuid ${targetdev}
+    probe --set=target_uuid --fs-uuid ${targetdev}
+
+    search --file /commoninitfs/bin/busybox --set=systemdev
+    probe --set=system_partuuid --part-uuid ${systemdev}
+
+    set osdir="(${targetdev})/${osname}"
+    set kernel="${osdir}/${osname}.kernel"
+    set rootimg="(PATH:/${osname}/${osname}.img,ROOTPARTITION:2,INIT:/sbin/init)"
+    set rootopts="root=PARTUUID=${system_partuuid} rootwait rw"
+    set consoles="console=tty0 earlycon=efifb fbcon=keep"
+    set initarg="init=/boot/preinit"
+    set ids="SYSTEM_PARTUUID=${system_partuuid} TARGET_PARTUUID=${target_partuuid} TARGET_UUID=${target_uuid}"
+
+    devicetree ${osdir}/${osname}.dtb
+    linux ${kernel} ${rootopts} ${consoles} ${initarg} ROOTIMAGE="${rootimg}" ${ids}

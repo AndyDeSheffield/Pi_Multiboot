@@ -1,0 +1,83 @@
+Mods To A Raspi_Lite image to get to the MultiBoot_Admin image
+# -------------------------------
+# 1. Install all required packages
+# -------------------------------
+sudo apt install --no-install-recommends \
+    xserver-xorg xinit openbox \
+    lxterminal \
+    libxkbcommon0 libxkbcommon-x11-0 \
+    libxcb1 libxcb-render0 libxcb-shape0 libxcb-shm0 \
+    libxcb-xfixes0 libxcb-randr0 libxcb-image0 \
+    libxcb-keysyms1 libxcb-icccm4 libxcb-util1 \
+    libxcb-cursor0 \
+    libopengl0 libglx0 libegl1 \
+    udisks2 polkitd gvfs \
+    fonts-dejavu-core
+
+# ---------------------------------------------------------
+# 2. Create global X startup script for all users (xinitrc)
+#    - Starts Openbox
+#    - Opens lxterminal at correct size
+#    - Starts in the user's home directory
+# ---------------------------------------------------------
+sudo tee /etc/X11/xinit/xinitrc >/dev/null <<'EOF'
+#!/bin/sh
+
+# Start Openbox window manager
+openbox-session &
+
+# Launch terminal with geometry and correct working directory
+lxterminal --geometry=120x30 --working-directory="$HOME" &
+
+# Keep X running
+wait
+EOF
+
+sudo chmod +x /etc/X11/xinit/xinitrc
+
+# ---------------------------------------------------------
+# 3. Set Openbox as the default window manager
+# ---------------------------------------------------------
+sudo update-alternatives --set x-window-manager /usr/bin/openbox
+
+# ---------------------------------------------------------
+# 4. Enable autologin on tty1 for user 'pi'
+# ---------------------------------------------------------
+sudo mkdir -p /etc/systemd/system/getty@tty1.service.d
+
+sudo tee /etc/systemd/system/getty@tty1.service.d/autologin.conf >/dev/null <<'EOF'
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin pi --noclear %I $TERM
+EOF
+
+# ---------------------------------------------------------
+# 5. Create systemd service to auto-run startx on login
+# ---------------------------------------------------------
+sudo tee /etc/systemd/system/startx@.service >/dev/null <<'EOF'
+[Unit]
+Description=Start X session on tty1
+After=systemd-user-sessions.service
+
+[Service]
+User=%i
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+StandardInput=tty
+StandardOutput=tty
+StandardError=tty
+Environment=DISPLAY=:0
+ExecStart=/usr/bin/startx
+Restart=no
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable it for user pi
+sudo systemctl enable startx@pi.service
+
+# Reload systemd
+sudo systemctl daemon-reload

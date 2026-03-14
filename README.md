@@ -33,9 +33,11 @@ It contains the UEFI bootloader and the **grub** binary and **grub.cfg** which t
 3. One or more Image partitions on one or more disks. This contains the os images. Note that some of the utilites provided assume just one such partition but it isnt a hard limitation
 
 ## How it works
-The image below describes the flow of the boot process.
+Essentially the system works by presenting the kernel with a false **Root** partition. The kernel runs its own PID1 routine,either directly or with an initramfs (only simple ones supported). It then chains through \
+to the init process in the false Root partition which loop mounts the image of the _real_ partatition (still in PID1), remounts the critical proc,sys and dev inside it, and chroots to the _real_ init (usually /sbin/init)
+The image below describes the flow of this boot process in more detail.
 
-[boot process](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/bootflow.jpg?raw=true) 
+![boot process](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/bootflow.jpg?raw=true) 
 1. The Pi firmware loads the uefi firmware in the boot partition. Note that the (provided) config.txt file used here is minimal. \
 The dtb properties and any overlays along with overlay properties in the original image boot sector config.txt are used to create a pre-merged dtb file for grub. However it is possible to set any global non-dtb properties here, although they will be set across all images.
 2. the uefi firmware loads [**shellaa64.efi** by pbatard](https://github.com/pbatard/UEFI-Shell/release) renaomed as BOOTAA64.EFI. The purpose of this is just to introduce a delay and then request the uefi software to rescan for disk partitions in order to accomodate slow disks. It may not be necessary, in which case you can rename grub.efi toBOOTAA64.EFI and take this stage out.
@@ -48,7 +50,19 @@ The dtb properties and any overlays along with overlay properties in the origina
 The following are provided:-
 1. A shell script **multiboot-build.sh** which can create any combination of partitions for BOOT (called REALBOOT),SYSTEM, and IMAGES on a removable device. This also installs tar archives for the model specific boot partition and for the system partition 
 2. A shell script  **makeimage.sh** to make a blank **.img** file of the desired size in MB
-3. A shell script **attachimage.sh** to loop mount an image file (optionally mounting the partitions if there are any)
-4. A modified  raspi-imager **raspi-loopimager** bundle for arm and intel that allows imaging to a loop mount
-5. A tool for arm and intel **makedtb** which scans for and parses the config.txt in an image boot sector and creates merged dtb with all (main) overlays applied and properties (base and overlays) set
+3. A shell script **attachimage.sh** to loop mount an image file (optionally mounting t he partitions if there are any)
+4. A similar script **detachimage.sh**
+5. A modified  raspi-imager **raspi-loopimager** bundle for arm and intel that allows imaging to a loop mount
+6. A tool for arm and intel **makedtb** which scans for and parses the config.txt in an image boot sector and creates merged dtb with all (main) overlays applied and properties (base and overlays) set
+7. A script **installimage.sh** which uses the above tools and which 
+    - creates a blank image file of requested size and name in a target directory of the same name
+	- mounts that image file as a loop device
+	- runs raspi_imager to install the requested image to the loop device
+	- runs makedtb to create a composite dtb file for the image in the target directory,
+	  applying the overlays and properties defined in init.txt
+	- copies the kernel from the mounted boot directory to the target directory
+	- unmounts the image and deletes the loop
+	- creates a sample grub.cfg entry in the target directory
+	
+	The user can abort at step if anything fails and the preceding steps will be backed out
 

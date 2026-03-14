@@ -1,3 +1,4 @@
 # Ignore multiboot build output directories
-create_structure/
-create_images/
+*.tar.gz
+create_images/arm64/
+create_images/x64/
