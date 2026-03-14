@@ -46,23 +46,24 @@ Statically linked files:
 # 3. Apache-2.0 Components
 
 Files:
-- `raspi-loopimager` (modified from Raspberry Pi Imager)
+- `raspi-loopimager` (modified from [Raspberry Pi Imager](https://github.com/raspberrypi/rpi-imager))
 
 ---
 
 # 4. BSD-2-Clause-Patent Components (EDK2/UEFI)
 
-USEI Shell and other EDK2-derived binaries.
+UEFI Shell and other EDK2-derived binaries.
 
 Renamed files:
-- `BOOTAA64.EFI`
+- shell.efi renamed to BOOTAA64.EFI` (acknowledgements to [Pbatard](https://github.com/pbatard/UEFI-Shell/tree/main))
+ 
 
 ---
 
 # 5. GRUB-3.0+ Components (GRUB EFI)
 
 Files:
-- `grubaa64.efi`
+- `grubaa64.efi` (acknowledgements to [the Pi Firmware Task Force](https://github.com/pftf))
 
 ---
 
