@@ -1,4 +1,5 @@
 # An Alternative Multi-Boot Architecture for the Raspberry Pi
+#This git repository is in the process of creation. NOTHING WILL WORK YET
 ## Introduction
 First a **disclaimer**. This project is somewhere between alpha and beta and was something to occupy me during the winter months. I wouldn't touch this at all unless you are fairly familiar with how the Raspbery pi boots. \
 
