@@ -68,7 +68,14 @@ cd /mnt/realimages/staging/adminarchive
 ```
  cd /mnt/realimages/MultiBoot_Admin
  ls Grub*.cfg
+```
+ then 
+```
  sudo cp Grub_MultiBoot_Admin_pi4.cfg /mnt/realboot/efi/boot/grub.cfg
+```
+or to add at the end of the existing file
+```
+ cat Grub_MultiBoot_Admin_pi4.cfg |sudo tee -a /mnt/realboot/efi/boot/grub.cfg
 ```
 4. Unmount the partitions and optionally remove the mountpoints
 ```
