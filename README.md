@@ -56,7 +56,7 @@ The dtb properties and any overlays along with overlay properties in the origina
 ## Tools
 The following are provided:-
 
-1. A shell script **multiboot-build.sh** which can create any combination of partitions for BOOT (called REALBOOT),SYSTEM, and IMAGES on a removable device. This also installs tar archives for the model specific boot partition and for the system partition 
+1. A shell script **multiboot-build.sh** which can create any combination of partitions for BOOT (called BOOTPI\<model\>), SYSTEM, and IMAGES on a removable device. This also installs tar archives for the model specific boot partition and for the system partition 
 2. A script **install_image.sh** which :-
 
     - creates a blank image file of requested size and name in a target directory of the same name
