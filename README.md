@@ -1,62 +1,76 @@
 # An Alternative Multi-Boot Architecture for the Raspberry Pi
 # This git repository is in the process of creation. NOTHING WILL WORK YET
 ## Introduction
-First a **disclaimer**. This project is somewhere between alpha and beta and was something to occupy me during the winter months. I wouldn't touch this at all unless you are fairly familiar with how the Raspbery pi boots. \
+First a **disclaimer**. This project is somewhere between alpha and beta and was something
+ to occupy me during the winter months. I wouldn't touch this at all unless you are fairly familiar with how the
+ Raspbery Pi boots. 
 
-I wanted to create a multi-boot system that had the following properties:- 
+I have tried to create a multi-boot system that has the following properties:- 
 
--  boots **.img** files rather than physical partitions.
--  All images would use their own kernels and their own dtb structure(base,overlay,properties)
+-  Boots **.img** files rather than physical partitions.
+-  All os images would use their own kernels and their own dtb structure (base,overlay,properties)
 -  Images could be anywhere, on any disk or any partition
--  An images partition could contain images for multiple pi models
--  Posibility to extend the size of an image without hitting barriers due to a suceeding partition
+-  An images partition could contain os images for multiple pi models. The ROOT partition of these images can
+even be shared across models where they are compatible.
+-  Posibility of extending the size of an image without hitting barriers due to a suceeding partition
 -  Be able to use a (slightly modified) version of the Rpi-Imager tool to create the .img files from the official source repository
 
 ## Limitations
-There are some limitations to what this system will boot 
+There are some limitations to what this system will boot:-
 
 -  The kernel of the image must include a uefi stub as this project uses the uefi bootloaders created by the [Pi Firmware Task Force](https://github.com/pftf)
 -  64 bit images only. This is a little limiting for the pi3b
 -  The system can have images for multiple devices but the single boot partition has to be device specific
--  Booting of some of the more exotic images like lineage will not work
--  Only very basic initramfs systems like the Ubuntu one which contains modules but no init script are supported
+-  Booting of some of the more exotic images like lineage will not work (yet)
+-  Only very basic initramfs systems like the Ubuntu or Raspian ones which contain modules but no complex init script are supported
 ### Tested images
 
 -  pi3b
    -  Raspberry Pi OS (64-bit)Trixie
-   -  Raspberry PI OS Lite (64 bit)
+   -  Raspberry PI OS Lite Trixie (64 bit)
    -  Ubuntu Server 24.04.4 LTS (64 bit)
 -  pi4
    -  Raspberry Pi OS (64-bit)Trixie
-   -  Raspberry PI OS Lite (64 bit)
-   -  Ubuntu Server 25.10 (64 bit)
+   -  Raspberry PI OS Lite Trixie (64 bit)
+   -  Ubuntu Server 25.10 (64 bit)  
 ## Disk Structure 
 The disk structure is the following :-
 
-1. A per device **REALBOOT** partition. This can be on a master drive if you have all the same hardware type or on, for example, its own USB key or microSD with a common drive for other partitions if you want to boot images for the Pi3B and Pi4 on the same master disk \
+1. A per Pi model **BOOT\<Model\>** (BOOTPI3,BOOTPI4) partition. This can be on a master drive if you have all the same hardware type or on, for example, its own USB key or microSD with a common drive for other partitions if you want to boot images for the Pi3B and Pi4 on the same master disk \
 It contains the UEFI bootloader and the **grub** binary and **grub.cfg** which the multiboot system relies upon
 2. A single systemwide **System** partition. This contains the logic for the multiboot process
-3. One or more Image partitions on one or more disks. This contains the os images. Note that some of the utilites provided assume just one such partition but it isnt a hard limitation
+3. One or more Image partitions on one or more disks. 
+This contains the os images. Note that some of the utilites provided assume just one such partition but it isn't a hard limitation
 
 ## How it works
-Essentially the system works by presenting the kernel with a false **Root** partition. The kernel runs its own PID1 routine,either directly or with an initramfs (only simple ones supported). It then chains through \
-to the init process in the false Root partition which loop mounts the image of the _real_ partatition (still in PID1), remounts the critical proc,sys and dev inside it, and chroots to the _real_ init (usually /sbin/init)
+Essentially the system works by presenting the kernel with a false **Root** partition. The kernel runs its own PID1 routine,either directly
+or with an initramfs (again, only simple ones are supported). It then chains through to the init process in the false Root partition,
+which loop mounts the image of the _real_ Root partition (still in PID1), remounts the critical proc,sys and dev inside it,
+and chroots to the _real_ init (usually /sbin/init)
 The image below describes the flow of this boot process in more detail.
 
 ![boot process](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/bootflow.jpg?raw=true) 
 
 1. The Pi firmware loads the uefi firmware in the boot partition. Note that the (provided) config.txt file used here is minimal. \
-The dtb properties and any overlays along with overlay properties in the original image boot sector config.txt are used to create a pre-merged dtb file for grub. However it is possible to set any global non-dtb properties here, although they will be set across all images.
-2. the uefi firmware loads [**shellaa64.efi** by pbatard](https://github.com/pbatard/UEFI-Shell/release) renaomed as BOOTAA64.EFI. The purpose of this is just to introduce a delay and then request the uefi software to rescan for disk partitions in order to accomodate slow disks. It may not be necessary, in which case you can rename grub.efi toBOOTAA64.EFI and take this stage out.
-3. grub loads its config file with the list of bootable images. When an image is selected it scans for the system partition and the images partition containing the selected image. It obtains the PARTUUID's and UUID's for the target partition and sytem partition, passing them as kernel parameters to the next stage.
+The dtb properties and any overlays along with overlay properties in the original image boot sector config.txt are used to create a pre-merged dtb file for grub. However it is possible to set any global non-dtb properties here,
+although they will be set across all images.
+2. The uefi firmware loads [**shellaa64.efi**](https://github.com/pbatard/UEFI-Shell/release) renamed as BOOTAA64.EFI.
+ The purpose of this is just to introduce a delay and then request the uefi software to rescan for disk partitions in order to accomodate slow disks.
+ It may not be necessary, in which case you can rename grub.efi to BOOTAA64.EFI and take this stage out.
+3. grub loads its config file with the list of bootable images. When an image is selected it scans for the system partition
+ and the images partition containing the selected image. It obtains the PARTUUID's and UUID's for the target images partition and system partition,
+ passing them as kernel parameters to the next stage.
 4. The kernel is booted along with any minimal initramfs with the system preinit script specified as the INIT parameter
-5. The preinit script parses the jernel command line to obtain the UUIDs of the target and system partitions. It then does a chroot to a simulated filebased initrd environment specifying the init script of that environment as next step
-6. The init script (using busybox) loop mounts the root partition of the specified img file, mounts the relevant proc and sys mounts inside it and chroot's to /sbin/init inside the img loop mount
+5. The preinit script parses the kernel command line to obtain the UUIDs of the target and system partitions.
+ It then does a chroot to a simulated, filebased, initrd environment specifying the init script of that environment as next step
+6. The init script (using busybox) loop mounts the root partition of the specified img file, 
+ mounts the relevant proc and sys mounts inside it and chroot's to /sbin/init inside the img loop mount
 7. Second stage boot continues as per normal
 ## Tools
 The following are provided:-
 
-1. A shell script **multiboot-build.sh** which can create any combination of partitions for BOOT (called BOOTPI\<model\>), SYSTEM, and IMAGES on a removable device. This also installs tar archives for the model specific boot partition and for the system partition 
+1. A shell script **multiboot-build.sh** which can create any combination of partitions for BOOT (called BOOT\<model\>), SYSTEM, and IMAGES on a removable device.
+ This also installs tar archives for the model specific boot partition and for the system partition 
 2. A script **install_image.sh** which :-
 
     - creates a blank image file of requested size and name in a target directory of the same name
@@ -72,11 +86,17 @@ The following are provided:-
 	
 	it uses 
 	
-	- A modified  raspi-imager **raspi-loopimager** bundle for arm and intel that allows imaging to a loop mount
-    - A tool for arm and intel **makedtb** which scans for and parses the config.txt in an image boot sector and creates merged dtb with all (main) overlays applied and properties (base and overlays) set
+	- A modified  raspi-imager pair **Raspberry_Pi_Imager-{x64,arm64}.AppImage** bundle for arm and intel that allows imaging to a loop mount
+    - A tool pair for arm and intel **makedtb-{x64,arm64}** which scan for and parse the config.txt in an image boot sector and
+	create a merged dtb with all (main) overlays applied and properties (base and overlays) set
 
 3. Some utilities
     - A shell script  **makeimage.sh** to make a seperate blank **.img** file of the desired name and size in MB
     - A shell script **attachimage.sh** to loop mount an image file (optionally mounting the partitions if there are any)
     - A similar script **detachimage.sh**
     
+## Build Instructions
+See the specific help files 
+ - [**Create_Partition_Structure.md*](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/Create_Partition_Structure_Instructions.md)
+ for instructions on creating the 3 partition structure on oneormore USB.microSD drives
+ _ **Create_Image.md** (to be added) For instructions on adding an image from the Pi repository.
