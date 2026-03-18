@@ -13,8 +13,8 @@ fi
 
 if [ "$1" = "-l" ]; then
     echo "listing all devices"
-        lsblk --tree --filter 'NAME =~ "^sd"' -o NAME,VENDOR,LABEL,SIZE,MOUNTPOINTS,RM
-        exit 0
+    lsblk --tree -o NAME,VENDOR,LABEL,SIZE,MOUNTPOINTS,RM         | grep --color=never -E '(^sd|[├└]─sd)'
+    exit 0
 fi
 #Identify the Images partition
 TARGET="/dev/$(lsblk -nr /dev/$1  -o NAME,LABEL |awk '$2=="IMAGES"{print $1}')"
@@ -29,12 +29,13 @@ echo "Creating mountpoint and mounting $TARGET"
 sudo mkdir -p /mnt/realimages
 sudo mount $TARGET /mnt/realimages
 echo "Fetching Admin image $ARCHIVE"
-
+sleep 3
 CURRENTDIR=$PWD
+sudo mkdir -p /mnt/realimages/staging
 cd /mnt/realimages/staging
-sudo wget "https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/$RELEASE/$ARCHIVE"
+sudo wget -q --show-progress "https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/$RELEASE/$ARCHIVE"
 echo "Restoring $ARCHIVE into /mnt/realimages"
-sudo tar -xzf "$ARCHIVE" -C /mnt/realimages
+sudo tar -xzf  "$ARCHIVE" -C /mnt/realimages --checkpoint=.5000
 sync
 echo "Restore complete. Unmounting and removing mount directory"
 cd $CURRENTDIR
