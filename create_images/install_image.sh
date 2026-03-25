@@ -221,8 +221,8 @@ if [[ ! -x "./$ARCH/merge-dtb-$ARCH" ]]; then
     exit 1
 fi
 
-"./$ARCH/merge-dtb-$ARCH" -b "$BOOTPART_DIR" -o "$DTB_PATH" -m "$MODEL" -v 4
-
+"./$ARCH/merge-dtb-$ARCH" -b "$BOOTPART_DIR" -o "$DTB_PATH" -m "$MODEL" -x -v3
+: <<'COMMENT_BLOCK'
 CONFIG_FILE="$BOOTPART_DIR/config.txt"
 KERNEL_NAME=""
 
@@ -281,6 +281,7 @@ else
         fi
     done
 fi
+COMMENT_BLOCK
 
 # --- Step 3.5: Optional expansion ---
 echo "Step 3.7: Optional expansion..."
