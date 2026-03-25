@@ -50,7 +50,11 @@ sudo ./multiboot-build.sh -t=/dev/sdb -m=pi4 -b -s -i
 ```
   cd ~
   wget https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/Version_0.5_alpha/install_multiboot_admin_os.sh
+  chmod +x install_multiboot_admin_os.sh
   ./install_multiboot_admin_os.sh -l 
+```
+  Then when happy (chosing the right disk)
+```
   ./install_multiboot_admin_os.sh /dev/sdb
 ```
  ###### Manual Installation
@@ -81,6 +85,8 @@ sudo rmdir /mnt/realimages
  Transfer the usb key to the target device and try to boot. If it is a microSD card you can optionally put it into the slot on the pi.
  **Note that the BOOT partition on this key must be the only one in the system.** 
  Also only one SYSTEM partition is allowed.You can have any number of IMAGES partitions
+ 
+ **For the MultiBoot Admin OS, User=pi, Password=pi**
  
  ##### Split Disks
 Notes on splitting the architecture over different disks. 
