@@ -220,8 +220,9 @@ if [[ ! -x "./$ARCH/merge-dtb-$ARCH" ]]; then
     abort2
     exit 1
 fi
-
 "./$ARCH/merge-dtb-$ARCH" -b "$BOOTPART_DIR" -o "$DTB_PATH" -m "$MODEL" -x -v3
+
+
 : <<'COMMENT_BLOCK'
 CONFIG_FILE="$BOOTPART_DIR/config.txt"
 KERNEL_NAME=""
@@ -314,11 +315,7 @@ LOOPDEV=""
 
 generate_grub_entry "$NAME" "$MODEL" "$TARGET_DIR"
 
-echo
+
 echo "Image creation completed successfully."
 echo "Directory: $TARGET_DIR"
-echo " IMG      : $IMG_PATH"
-echo " DTB      : $DTB_PATH"
-echo " KERNEL   : $KERNEL_PATH"
-echo " INITRAMFS: copied if present"
-echo " GRUBENTRY: $GRUB_PATH"
+ls -l  "$TARGET_DIR"
