@@ -15,7 +15,7 @@ DTB_PATH=""
 KERNEL_PATH=""
 LOOPDEV=""
 BOOTPART_DIR="./bootpart"
-
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 usage() {
     cat <<EOF
 Usage: $0 -r=<root_mount> -n=<name_of_image> -m=<pi_model> -s=<size> [-e] [-h]
@@ -122,7 +122,24 @@ prompt_step() {
         *) echo "Invalid choice, assuming abort."; $abort_fn; exit 1 ;;
     esac
 }
+handle_cpu_fix() {
+# Copy cpufix.dtbo to overlays directory
+ echo "Handling cpu fix. Installing cpufix.dtbo and activating in extra_config.txt"
+OVERLAYS_DIR=$(find "$BOOTPART_DIR" -type d -name "overlays" | head -1)
+if [ ! -f "$OVERLAYS_DIR/cpufix.dtbo" ]; then
+    cp "$SCRIPT_DIR/cpufix.dtbo" "$OVERLAYS_DIR/cpufix.dtbo"
+fi
 
+# Handle extra_config.txt
+EXTRA_CONFIG="$BOOTPART_DIR/extra_config.txt"
+if [ ! -f "$EXTRA_CONFIG" ]; then
+    cp "$SCRIPT_DIR/extra_config.txt" "$EXTRA_CONFIG"
+else
+    if ! grep -q "dtoverlay=cpufix" "$EXTRA_CONFIG"; then
+        cat "$SCRIPT_DIR/extra_config.txt" >> "$EXTRA_CONFIG"
+    fi
+fi
+}
 generate_grub_entry() {
     local name="$1"
     local model="$2"
@@ -139,16 +156,14 @@ generate_grub_entry() {
     {
         echo "menuentry \"${title}\" {"
         echo "    set osname=\"${name}_${model}\""
-        cat "$grub_base"
+        cat "$SCRIPT_DIR/$grub_base"
 
         # Add initrd lines only if initramfs files exist
-        if compgen -G "${target_dir}/initramfs*" > /dev/null; then
-            for f in "${target_dir}"/initramfs*; do
+        if compgen -G "${target_dir}/*.initrd" > /dev/null; then
+            for f in "${target_dir}"/*.initrd; do
                 base=$(basename "$f")
                 echo "    initrd \${osdir}/${base}"
             done
-        elif [[ -f "${target_dir}/initrd.img" ]]; then
-            echo "    initrd \${osdir}/initrd.img"
         fi
 
         echo "}"
@@ -220,69 +235,11 @@ if [[ ! -x "./$ARCH/merge-dtb-$ARCH" ]]; then
     abort2
     exit 1
 fi
+# Install the .dtbo to fix cpus not being recognised
+handle_cpu_fix
+#Run the dtb merge tool
 "./$ARCH/merge-dtb-$ARCH" -b "$BOOTPART_DIR" -o "$DTB_PATH" -m "$MODEL" -x -v3
 
-
-: <<'COMMENT_BLOCK'
-CONFIG_FILE="$BOOTPART_DIR/config.txt"
-KERNEL_NAME=""
-
-if [[ -f "$CONFIG_FILE" ]]; then
-    KERNEL_LINE=$(grep -E '^kernel=' "$CONFIG_FILE" | tail -n 1 || true)
-    [[ -n "$KERNEL_LINE" ]] && KERNEL_NAME="${KERNEL_LINE#kernel=}"
-fi
-
-if [[ -z "$KERNEL_NAME" ]]; then
-    case "$MODEL" in
-        pi4) KERNEL_NAME="kernel8.img" ;;
-        pi5) KERNEL_NAME="kernel_2712.img" ;;
-        *)   KERNEL_NAME="kernel8.img" ;;
-    esac
-    echo "Defaulting kernel to $KERNEL_NAME"
-else
-    echo "Kernel from config.txt: $KERNEL_NAME"
-fi
-
-KERNEL_SRC=$(find "$BOOTPART_DIR" -name "$KERNEL_NAME" -print -quit)
-[[ -z "$KERNEL_SRC" ]] && echo "Kernel not found." && abort2 && exit 1
-
-cp "$KERNEL_SRC" "$KERNEL_PATH"
-
-# --- Step 3.6: Initramfs detection ---
-echo "Step 3.6: Checking for initramfs..."
-
-INITRAMFS_FILES=()
-
-# auto_initramfs
-if grep -q "^auto_initramfs=1" "$CONFIG_FILE" 2>/dev/null; then
-    echo "auto_initramfs=1 detected."
-    base="${KERNEL_NAME%.*}"
-    initname="initramfs${base#kernel}"
-    INITRAMFS_FILES+=("$initname")
-fi
-
-# explicit initramfs lines
-while IFS= read -r line; do
-    files_part=$(echo "$line" | awk '{print $2}')
-    IFS=',' read -ra arr <<< "$files_part"
-    for f in "${arr[@]}"; do INITRAMFS_FILES+=("$f"); done
-done < <(grep -E "^initramfs " "$CONFIG_FILE" 2>/dev/null || true)
-
-if [[ ${#INITRAMFS_FILES[@]} -eq 0 ]]; then
-    echo "No initramfs detected."
-else
-    echo "Initramfs files: ${INITRAMFS_FILES[*]}"
-    for f in "${INITRAMFS_FILES[@]}"; do
-        SRC=$(find "$BOOTPART_DIR" -name "$f" -print -quit)
-        if [[ -z "$SRC" ]]; then
-            echo "Warning: initramfs '$f' not found."
-        else
-            echo "Copying initramfs '$f'..."
-            cp "$SRC" "$TARGET_DIR/$f"
-        fi
-    done
-fi
-COMMENT_BLOCK
 
 # --- Step 3.5: Optional expansion ---
 echo "Step 3.7: Optional expansion..."

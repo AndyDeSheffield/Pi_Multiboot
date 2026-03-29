@@ -1,0 +1,42 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+    fragment@0 {
+        target-path = "/";
+        __overlay__ {
+            psci {
+                compatible = "arm,psci-1.0";
+                method = "smc";
+            };
+        };
+    };
+
+    fragment@1 {
+        target-path = "/cpus/cpu@0";
+        __overlay__ {
+            enable-method = "psci";
+        };
+    };
+
+    fragment@2 {
+        target-path = "/cpus/cpu@1";
+        __overlay__ {
+            enable-method = "psci";
+        };
+    };
+
+    fragment@3 {
+        target-path = "/cpus/cpu@2";
+        __overlay__ {
+            enable-method = "psci";
+        };
+    };
+
+    fragment@4 {
+        target-path = "/cpus/cpu@3";
+        __overlay__ {
+            enable-method = "psci";
+        };
+    };
+};
