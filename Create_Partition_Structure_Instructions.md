@@ -77,7 +77,7 @@ cd /mnt/realimages/staging/
  3. Unmount the partition and optionally remove the mountpoint
 ```
 cd ~
-sudo unmount /mnt/realimages
+sudo umount /mnt/realimages
 sudo rmdir /mnt/realimages
 
 ```
@@ -101,5 +101,5 @@ sudo ./multiboot-build.sh -t=/dev/sdb -m=pi4 -b
 Then for a second disk with the SYSTEM and IMAGES partitions
 ``` 
 sudo ./multiboot-build.sh -n -t=/dev/sdb -m=pi4 -s -i
-sudo ./multiboot-build.sh -t=/dev/sdb -m=pi4 --s -i
+sudo ./multiboot-build.sh -t=/dev/sdb -m=pi4 -s -i
 ```

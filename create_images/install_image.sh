@@ -122,23 +122,18 @@ prompt_step() {
         *) echo "Invalid choice, assuming abort."; $abort_fn; exit 1 ;;
     esac
 }
-handle_cpu_fix() {
+
+handle_uefi_fixes() {
 # Copy cpufix.dtbo to overlays directory
- echo "Handling cpu fix. Installing cpufix.dtbo and activating in extra_config.txt"
+ echo "Handling uefi fixes. Installing cpufix.dtbo and uefi_fixes.txt"
 OVERLAYS_DIR=$(find "$BOOTPART_DIR" -type d -name "overlays" | head -1)
 if [ ! -f "$OVERLAYS_DIR/cpufix.dtbo" ]; then
     cp "$SCRIPT_DIR/cpufix.dtbo" "$OVERLAYS_DIR/cpufix.dtbo"
 fi
 
-# Handle extra_config.txt
-EXTRA_CONFIG="$BOOTPART_DIR/extra_config.txt"
-if [ ! -f "$EXTRA_CONFIG" ]; then
-    cp "$SCRIPT_DIR/extra_config.txt" "$EXTRA_CONFIG"
-else
-    if ! grep -q "dtoverlay=cpufix" "$EXTRA_CONFIG"; then
-        cat "$SCRIPT_DIR/extra_config.txt" >> "$EXTRA_CONFIG"
-    fi
-fi
+# Handle uefi_fixes.txt
+UEFI_EXTRAS="$BOOTPART_DIR/uefi_fixes.txt"
+    cp "$SCRIPT_DIR/uefi_fixes.txt" "$UEFI_EXTRAS"
 }
 generate_grub_entry() {
     local name="$1"
@@ -235,8 +230,8 @@ if [[ ! -x "./$ARCH/merge-dtb-$ARCH" ]]; then
     abort2
     exit 1
 fi
-# Install the .dtbo to fix cpus not being recognised
-handle_cpu_fix
+# Install  any addtional dtbos needed due to uefi boot
+handle_uefi_fixes
 #Run the dtb merge tool
 "./$ARCH/merge-dtb-$ARCH" -b "$BOOTPART_DIR" -o "$DTB_PATH" -m "$MODEL" -x -v3
 

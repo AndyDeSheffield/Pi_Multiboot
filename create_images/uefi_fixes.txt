@@ -1,0 +1,6 @@
+[all]
+[pi3]
+dtoverlay=cpufix
+[pi4]
+dtoverlay=cpufix
+[all]

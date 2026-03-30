@@ -3,7 +3,7 @@
 ## Introduction
 First a **disclaimer**. This project is somewhere between alpha and beta and was something
  to occupy me during the winter months. I wouldn't touch this at all unless you are fairly familiar with how the
- Raspbery Pi boots. 
+ Raspberry Pi boots. 
 
 I have tried to create a multi-boot system that has the following properties:- 
 
@@ -12,7 +12,7 @@ I have tried to create a multi-boot system that has the following properties:-
 -  Images could be anywhere, on any disk or any partition
 -  An images partition could contain os images for multiple pi models. The ROOT partition of these images can
 even be shared across models where they are compatible.
--  Posibility of extending the size of an image without hitting barriers due to a suceeding partition
+-  Possibility of extending the size of an image without hitting barriers due to a suceeding partition
 -  Be able to use a (slightly modified) version of the Rpi-Imager tool to create the .img files from the official source repository
 
 ## Limitations
