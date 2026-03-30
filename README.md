@@ -55,7 +55,7 @@ The image below describes the flow of this boot process in more detail.
 The dtb properties and any overlays along with overlay properties in the original image boot sector config.txt are used to create a pre-merged dtb file for grub. However it is possible to set any global non-dtb properties here,
 although they will be set across all images.
 2. The uefi firmware loads [**shellaa64.efi**](https://github.com/pbatard/UEFI-Shell/release) renamed as BOOTAA64.EFI.
- The purpose of this is just to introduce a delay and then request the uefi software to rescan for disk partitions in order to accomodate slow disks.
+ The purpose of this is just to introduce a delay and then request the uefi software to rescan for disk partitions in order to accommodate slow disks.
  It may not be necessary, in which case you can rename grub.efi to BOOTAA64.EFI and take this stage out.
 3. grub loads its config file with the list of bootable images. When an image is selected it scans for the system partition
  and the images partition containing the selected image. It obtains the PARTUUID's and UUID's for the target images partition and system partition,
