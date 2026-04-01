@@ -21,7 +21,7 @@ usage() {
 Usage: $0 -r=<root_mount> -n=<name_of_image> -m=<pi_model> -s=<size> [-e] [-h]
   -r=<root_mount>    Root of mounted image disk (e.g. -r=/mnt/realimages)
   -n=<name>          Name of image (letters, numbers, '-', '_')
-  -m=<pi_model>      Pi model (e.g. pi4, pi5)
+  -m=<pi_model>      Pi model (e.g. pi3b,pi3b+,pi4, pi5)
   -s=<size>          Image size (e.g. 10G)
   -e                 Expand root filesystem (only if exactly 2 partitions exist)
   -h                 Show this help
