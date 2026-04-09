@@ -1,6 +1,9 @@
 [all]
+dtoverlay=miniuart-bt
 [pi3]
 dtoverlay=cpufix
+dtoverlay=upstream
 [pi4]
 dtoverlay=cpufix
+dtoverlay=upstream-pi4
 [all]

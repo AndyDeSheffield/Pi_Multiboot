@@ -12,8 +12,9 @@
     set kernel="${osdir}/${osname}.kernel"
     set rootimg="(PATH:/${osname}/${osname}.img,ROOTPARTITION:2,INIT:/sbin/init)"
     set rootopts="root=PARTUUID=${system_partuuid} rootwait rw"
+   #set consoles="console=ttyAMA1,115200 console=tty1 earlycon=efifb fbcon=keep"
     set consoles="console=tty0 earlycon=efifb fbcon=keep"
-	set extras=""
+    set extras=""
     set initarg="init=/boot/preinit"
     set ids="SYSTEM_PARTUUID=${system_partuuid} TARGET_PARTUUID=${target_partuuid} TARGET_UUID=${target_uuid}"
 
