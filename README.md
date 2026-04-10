@@ -49,7 +49,7 @@ which loop mounts the image of the _real_ Root partition (still in PID1), remoun
 and chroots to the _real_ init (usually /sbin/init)
 The image below describes the flow of this boot process in more detail.
 
-![boot process](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/bootflow.jpg?raw=true) 
+![boot process](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/bootflow.jpg?raw=true) 
 
 1. The Pi firmware loads the uefi firmware in the boot partition. Note that the (provided) config.txt file used here is minimal. \
 The dtb properties and any overlays along with overlay properties in the original image boot sector config.txt are used to create a pre-merged dtb file for grub. However it is possible to set any global non-dtb properties here,
