@@ -178,3 +178,20 @@ total 6332204
 -rw-r--r-- 1 root root         128 Apr 10 14:46 untreated_config.txt
 ```
 ## 4) Insert the contents of the suggested Grub file int grub.cfg
+- If using the Multiboot_Admin os and you have mounted the target partitionusing mountdrives.sh you are already in a position to do this.
+```
+sudo cp /mnt/realboot/efi/boot/grub.cfg /mnt/realboot/efi/boot/grub.cfg.bak
+sudo cat /mnt/realimages/My_New_OS_pi4/Grub_My_New_OS_pi4.cfg | sudo tee -a /mnt/realboot/efi/boot/grub.cfg
+```
+Otherwise you have to insert the device that you will be using and mount it
+the grub.cfg file that needs updating will be  <Mount>/efi/boot/grub.cfg
+## 5) Unmount the partitiosn cleanly
+With the Multiboot_Admin os use
+```
+~/Pi_Multiboot/tools/unmountdrives.sh
+```
+## 6) Test
+- Note that
+    - first boot of many os can take a long time
+	- The will be some errors in the startup mainly die to upower (not sure what this is)
+	- There is often an unexpected reboot on the very first boot. This may be the Raspbian resize functionality kicking in, I dont know.
