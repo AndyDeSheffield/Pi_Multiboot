@@ -67,7 +67,43 @@ Launching Raspberry Pi Imager...
 Refreshing loop partitions...
 Reattached loop device: /dev/loop2
 ```
-Follow the usual imaging process selecting the loop device attached to your image as the target  
+Follow the usual imaging process selecting the loop device attached to your image as the target 
+ -  Select Pi model
+ 
+ ![pi Model ](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.1.jpg?raw=true) 
+ -  Select Operating System
+ 
+ ![OS](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.2.jpg?raw=true) 
+- Select Target loop
+ 
+ ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.3.jpg?raw=true) 
+- Configure if desired
+ 
+ ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.4.jpg?raw=true) 
+- Configure if desired
+ 
+ ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.5.jpg?raw=true) 
+- Configure if desired
+ 
+ ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.6.jpg?raw=true) 
+- Configure if desired
+ 
+ ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.7.jpg?raw=true) 
+- Configure if desired
+ 
+ ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.8.jpg?raw=true) 
+- Write Image
+ 
+ ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.9.jpg?raw=true) 
+- Confirm Write
+ 
+ ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.10.jpg?raw=true) 
+- Writing
+ 
+ ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.11.jpg?raw=true) 
+- Finish
+ 
+ ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.12.jpg?raw=true) 
 ```
 Step 2 completed. Continue (c) or Abort (a)? [c/a]:
 ```
@@ -140,4 +176,5 @@ total 6332204
 -rwxr-xr-x 1 root root    22480912 Dec  4 14:49 My_New_OS_pi4.initrd
 -rwxr-xr-x 1 root root     9678820 Dec  4 14:39 My_New_OS_pi4.kernel
 -rw-r--r-- 1 root root         128 Apr 10 14:46 untreated_config.txt
-``
+```
+## 4) Insert the contents of the suggested Grub file int grub.cfg
