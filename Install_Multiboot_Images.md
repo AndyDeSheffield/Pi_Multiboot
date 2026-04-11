@@ -1,7 +1,5 @@
-
-
 # How to Install Images
-##Introduction
+## Introduction
 This guide assumes the use of the provided Multiboot_Admin environment to install additional images, although the same approach is used to install images using an external Linux os.
 This os should auto-login with two console screens but in a gui environment. For info **user=pi, password=pi**
 ## 1) Install or update the Multiboot Toolchain
