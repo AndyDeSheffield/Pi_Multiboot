@@ -96,9 +96,14 @@ Follow the usual imaging process selecting the loop device attached to your imag
 Step 2 completed. Continue (c) or Abort (a)? [c/a]:
 ```
 3) Step 3 creates a dtb file with all the overlays and properties  specified in the config.txt
- of the target boot partition merged in. It copies that dtb, along with the target kernel
- and any initramfs into a directory /target_name on the root mount.
- A suitable Grub entry file is also created
+ of the target boot partition merged in.
+   -  It copies that dtb, along with the target kernel
+      and any initramfs into a directory /target_name on the root mount.
+   -  A suitable Grub entry file is also created
+   -  The kernel cmdline used in the official image is extracted for reference. Use the "extras" variable in the grub config
+      to add any desired values.
+   -  The config.txt from the original boot partition is extracted for reference and a file "untreated_config.txt" is created showing
+      lines that it has not been possible to process.
 ```
 Continuing...
 Step 3: Extracting DTB and kernel...
