@@ -97,6 +97,6 @@ The following are provided:-
     
 ## Build Instructions
 See the specific help files 
- - [**Create_Partition_Structure.md*](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/Create_Partition_Structure_Instructions.md)
+ - [**Create_Partition_Structure.md**](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/Create_Partition_Structure_Instructions.md)
  for instructions on creating the 3 partition structure on oneormore USB.microSD drives
- _ **Create_Image.md** (to be added) For instructions on adding an image from the Pi repository.
+ _ [**Install_Multiboot_Images.md**](https://raw.githubusercontent.com/AndyDeSheffield/Pi_Multiboot/refs/heads/main/Install_Multiboot_Images.md) For instructions on adding an image from the Pi repository.
