@@ -68,42 +68,32 @@ Refreshing loop partitions...
 Reattached loop device: /dev/loop2
 ```
 Follow the usual imaging process selecting the loop device attached to your image as the target 
- -  Select Pi model
+<div>
+-  Select Pi model <br>
+	<img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.1.jpg?raw=true" style="margin-left: 15px; margin-bottom: 15px; width:50%; height:50%"/> <br>
+-  Select Operating System <br>
+	<img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.2.jpg?raw=true" style=" margin-left: 15px; margin-bottom: 15px; width:50%; height:50%"/> <br>
+	Select Target loop --- <b>Be careful NOT to select the SSD or Hard drive itself!</b> <br>
+	<img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.3.jpg?raw=true" style=" margin-left: 15px; margin-bottom: 15px; width:50%; height:50%"/> <br>
+-  Configure if desired <br>
+	<img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.4.jpg?raw=true" style=" margin-left: 15px; margin-bottom: 15px; width:45%; height:45%"/>
+	<img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.5.jpg?raw=true" style=" margin-left: 15px; margin-bottom: 15px; width:45%; height:45%"/>
+	<img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.6.jpg?raw=true" style=" margin-left: 15px; margin-bottom: 15px; width:45%; height:45%"/>
+	<img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.7.jpg?raw=true" style=" margin-left: 15px; margin-bottom: 15px; width:45%; height:45%"/>
+-   <img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.8.jpg?raw=true" style=" margin-left: 15px; margin-bottom: 15px; width:45%; height:45%"/> <br>
+-  Write Image <br>
+	<img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.9.jpg?raw=true" style=" margin-left: 15px;margin-bottom: 15px; width:50%; height:50%"/> <br>
+- Confirm Write <br>
  
- ![pi Model ](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.1.jpg?raw=true) 
- -  Select Operating System
+	<img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.10.jpg?raw=true" style=" margin-left: 15px; margin-bottom: 15px; width:50%; height:50%"/> <br>
+- Writing <br>
  
- ![OS](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.2.jpg?raw=true) 
-- Select Target loop
+	<img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.11.jpg?raw=true" style=" margin-left: 15px; margin-bottom: 15px; width:50%; height:50%"/> <br>
+- Finish <br>
  
- ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.3.jpg?raw=true) 
-- Configure if desired
- 
- ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.4.jpg?raw=true) 
-- Configure if desired
- 
- ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.5.jpg?raw=true) 
-- Configure if desired
- 
- ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.6.jpg?raw=true) 
-- Configure if desired
- 
- ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.7.jpg?raw=true) 
-- Configure if desired
- 
- ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.8.jpg?raw=true) 
-- Write Image
- 
- ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.9.jpg?raw=true) 
-- Confirm Write
- 
- ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.10.jpg?raw=true) 
-- Writing
- 
- ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.11.jpg?raw=true) 
-- Finish
- 
- ![Target Device](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.12.jpg?raw=true) 
+	<img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/pi_imager.12.jpg?raw=true" style=" margin-left: 15px; margin-bottom: 15px;width:50%; height:50%"/> <br>
+</div>
+
 ```
 Step 2 completed. Continue (c) or Abort (a)? [c/a]:
 ```
@@ -185,13 +175,37 @@ sudo cat /mnt/realimages/My_New_OS_pi4/Grub_My_New_OS_pi4.cfg | sudo tee -a /mnt
 ```
 Otherwise you have to insert the device that you will be using and mount it
 the grub.cfg file that needs updating will be  <Mount>/efi/boot/grub.cfg
-## 5) Unmount the partitiosn cleanly
+## 5) Unmount the partitions cleanly
 With the Multiboot_Admin os use
 ```
 ~/Pi_Multiboot/tools/unmountdrives.sh
 ```
 ## 6) Test
+<div>
+- Grub entry <br>
+	<img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/bootimg.jpg?raw=true" style=" margin-left: 15px;margin-bottom: 15px; width:50%; height:50%"/> <br>
+- After Boot <br>
+	<img src="https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/mainscreen.jpg?raw=true" style=" margin-left: 15px;margin-bottom: 15px; width:50%; height:50%"/> <br>
+
+</div>
+
 - Note that
     - first boot of many os can take a long time
 	- The will be some errors in the startup mainly die to upower (not sure what this is)
-	- There is often an unexpected reboot on the very first boot. This may be the Raspbian resize functionality kicking in, I dont know.
+	- There is often an unexpected reboot after the very first boot. This may be the Raspbian resize functionality kicking in, I dont know.
+
+##  Conclusion
+All the 64 bit Raspian images and the 64 bit Ubuntu images that I've tested booted using this technique. All 4 processors are present and there is working sound but that's all that I've tested.
+#### Footnote
+Using some slight variations I've also managed to boot :-
+- **LibreELECT** (v21.3 and only for the pi4 currently, due to lack of pi5 hardware and LibreELECT for the pi3 being 32 bit)
+    - Use the same process as above to create the image
+    - This then requires a small overlay initramfs (to include a custom "platform_init" file that loop mounts the LibreELECT image and also a custom Grub entry. [LibreELECT files here](https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/Version_0.5_alpha/LibreELECT.zip)
+	- Unzip the archive into the same directory as that of the LibreELECT img file
+	- platform_init is included for info only. It isn't needed
+	- If the version of the LibreELECT image changes on the raspi-imager you will have to update the grub entry to reference the new boot=UUID and disk=UUID entries in the grub "rootopts" variable.
+- **Fedora** (Fedora-Workstation-Disk-43-1.6.aarch64.raw.xz) 
+     - [From the official site] ( https://fedoraproject.org/workstation/download/)
+	 - This also needs a specific grub entry and initramfs overlay. 
+	 - The build process is much more manual. I'll provide details if anyone is interested
+- I'm looking to see if I can do anything with **Lineage** but it would need quite a lot of detective work
