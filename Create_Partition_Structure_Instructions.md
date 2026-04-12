@@ -49,7 +49,7 @@ sudo ./multiboot-build.sh -t=/dev/sdb -m=pi4 -b -s -i
   1. Download the installation script and run it, replacing /dev/sdb with your newly installed disk identifier ( the -l options lists current disks for a safety check)
 ```
   cd ~
-  wget https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/Version_0.5_alpha/install_multiboot_admin_os.sh
+  wget https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/latest/install_multiboot_admin_os.sh
   chmod +x install_multiboot_admin_os.sh
   ./install_multiboot_admin_os.sh -l 
 ```
@@ -70,8 +70,8 @@ cd /mnt/realimages/staging/
  2. Fetch the admin tarball, unpack it and install the image directory (update the release directory and name as necessary)
 
 ```
- wget https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/Version_0.5_alpha/MultiBoot_Admin_os_v0.5.tar.gz
- tar -xzf MultiBoot_Admin_os_v0.5.tar.gz -C /mnt/realimages
+ wget https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/latest/MultiBoot_Admin_os.tar.gz
+ tar -xzf MultiBoot_Admin_os.tar.gz -C /mnt/realimages
  sync
 ```
  3. Unmount the partition and optionally remove the mountpoint

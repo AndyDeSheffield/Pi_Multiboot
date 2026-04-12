@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 #update lines below for each new version
-ARCHIVE="MultiBoot_Admin_os_v0.5.tar.gz"
-RELEASE="Version_0.5_alpha"
+ARCHIVE="MultiBoot_Admin_os.tar.gz"
+RELEASE="latest"
 
 # Usage: example ./restore_admin_image.sh /dev/sdb
 if [ $# = 1 ] && [ "$1" = "-l" ]; then

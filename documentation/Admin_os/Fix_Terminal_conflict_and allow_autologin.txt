@@ -1,0 +1,43 @@
+#kill tty1 conflict
+sudo systemctl disable --now getty@tty1.service
+sudo systemctl mask getty@tty1.service
+sudo systemctl daemon-reload
+sudo reboot
+
+# then autologin happens here
+cat /etc/systemd/system/startx@.service
+[Unit]
+Description=Start X session on tty1
+After=systemd-user-sessions.service
+
+[Service]
+User=%i
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+StandardInput=tty
+StandardOutput=tty
+StandardError=tty
+Environment=DISPLAY=:0
+ExecStart=/usr/bin/startx
+Restart=no
+
+[Install]
+WantedBy=multi-user.target
+
+
+#and to stop sleep
+pi@raspberrypi:~ $ cat /etc/X11/xorg.conf.d/10-no-blanking.conf
+Section "ServerFlags"
+    Option "BlankTime" "0"
+    Option "StandbyTime" "0"
+    Option "SuspendTime" "0"
+    Option "OffTime" "0"
+EndSection
+
+Section "Monitor"
+    Identifier "Monitor0"
+    Option "DPMS" "false"
+EndSection
+
