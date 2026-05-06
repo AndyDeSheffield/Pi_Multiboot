@@ -1,17 +1,17 @@
 # An Alternative Multi-Boot Architecture for the Raspberry Pi  
 ## Introduction
-First a **disclaimer**. This project is somewhere between alpha and beta and was something
+First a **disclaimer**. This project is only beta and was something
  to occupy me during the winter months. I wouldn't touch this at all unless you are fairly familiar with how the
  Raspberry Pi boots. 
 
 I have tried to create a multi-boot system that has the following properties:- 
 
 -  Boots **.img** files rather than physical partitions.
--  All os images would use their own kernels and their own dtb structure (base,overlay,properties)
+-  All os images would use their own kernels and their own dtb structure (base,overlay,properties), and any provided initramfs.
 -  Images could be anywhere, on any disk or any partition
 -  An images partition could contain os images for multiple pi models. The ROOT partition of these images can
 even be shared across models where they are compatible.
--  Possibility of extending the size of an image without hitting barriers due to a suceeding partition
+-  Possibility of extending the size of an image without hitting barriers due to a suceeding physical partition
 -  Be able to use a (slightly modified) version of the Rpi-Imager tool to create the .img files from the official source repository
 
 ## Limitations
@@ -19,9 +19,12 @@ There are some limitations to what this system will boot:-
 
 -  The kernel of the image must include a uefi stub as this project uses the uefi bootloaders created by the [Pi Firmware Task Force](https://github.com/pftf)
 -  64 bit images only. This is a little limiting for the pi3b
--  The system can have images for multiple devices but the single boot partition has to be device specific
--  Booting of some of the more exotic images like lineage will not work (yet)
--  Only very basic initramfs systems like the Ubuntu or Raspian ones which contain modules but no complex init script are supported
+-  Image partitions can contain images for multiple devices but the single boot partition has to be device specific
+-  Booting of some of the more exotic images that I've tried needs image specific entities, maybe a specific dtb and/or more frequently a second small initramfs to overlay onto the one that
+   the image provides. 
+-  Most tested images comply with the non-initramfs boot process described below and do not use an initramfs overlay. However images marked with a **'*'** require the use on an overlay initramfs in order to get
+   ahead of the standard boot procedure to loop mount the image and make its partitions available. 
+   
 ### Tested images
 
 -  pi3b
@@ -31,17 +34,22 @@ There are some limitations to what this system will boot:-
 -  pi4
    -  Raspberry Pi OS (64-bit)Trixie
    -  Raspberry PI OS Lite Trixie (64 bit)
-   -  Ubuntu Server 25.10 (64 bit)  
+   -  Ubuntu Server 25.10 (64 bit)
+   -  Fedora-Workstation-Disk-43-1.6 *
+   -  LibreELECT 12.2.1 *
+   -  Lineage-23.2-20260128-UNOFFICIAL-KonstaKANG-rpi4 (includes booting to twrp as a seperate grub entry) *
+   
+   
 ## Disk Structure 
 The disk structure is the following :-
 
 1. A per Pi model **BOOT\<Model\>** (BOOTPI3,BOOTPI4) partition. This can be on a master drive if you have all the same hardware type or on, for example, its own USB key or microSD with a common drive for other partitions if you want to boot images for the Pi3B and Pi4 on the same master disk \
 It contains the UEFI bootloader and the **grub** binary and **grub.cfg** which the multiboot system relies upon
-2. A single systemwide **System** partition. This contains the logic for the multiboot process
+2. A single systemwide **SYSTEM** partition. This contains the logic for the non-initramfs multiboot process 
 3. One or more Image partitions on one or more disks. 
 This contains the os images. Note that some of the utilites provided assume just one such partition but it isn't a hard limitation
 
-## How it works
+## How it works (no or passive initramfs) 
 Essentially the system works by presenting the kernel with a false **Root** partition. The kernel runs its own PID1 routine,either directly
 or with an initramfs (again, only simple ones are supported). It then chains through to the init process in the false Root partition,
 which loop mounts the image of the _real_ Root partition (still in PID1), remounts the critical proc,sys and dev inside it,
@@ -59,12 +67,21 @@ although they will be set across all images.
 3. grub loads its config file with the list of bootable images. When an image is selected it scans for the system partition
  and the images partition containing the selected image. It obtains the PARTUUID's and UUID's for the target images partition and system partition,
  passing them as kernel parameters to the next stage.
-4. The kernel is booted along with any minimal initramfs with the system preinit script specified as the INIT parameter
+4. The kernel is booted along with any minimal non-active initramfs with the system preinit script specified as the INIT parameter
 5. The preinit script parses the kernel command line to obtain the UUIDs of the target and system partitions.
  It then does a chroot to a simulated, filebased, initrd environment specifying the init script of that environment as next step
 6. The init script (using busybox) loop mounts the root partition of the specified img file, 
  mounts the relevant proc and sys mounts inside it and chroot's to /sbin/init inside the img loop mount
 7. Second stage boot continues as per normal
+
+## How it works (active initramfs) 
+OS that use an active initramfs will have inside the initramfs a file at root level /init, which quite often is just a symlink
+to somewhere else. the init file contains or links to the stage 1 boot process, aimed at mounting and running the physical partitions
+of the image. It is necessary to identify the target image and loop mount it before that handover so the the subsequent 
+first stage init can operate on the loop partitions  and not the physical partitions. 
+The image below shows this process visually
+![boot process](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/initramfs_boot.jpg?raw=true) 
+
 ## Tools
 The following are provided:-
 
