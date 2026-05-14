@@ -25,7 +25,7 @@ Usage: $0 -r=<root_mount> -n=<name_of_image> -m=<pi_model> -s=<size> [-e] [-h]
   -s=<size>          Image size (e.g. 10G)
   -e                 Expand root filesystem (only if exactly 2 partitions exist)
   -h                 Show this help
-  Note that the script needs to be run with sudo
+  Note that the script needs to be run with sudo and relies on the device tree compiler (DTC) being available
 EOF
 }
 
@@ -124,20 +124,25 @@ prompt_step() {
 }
 
 handle_uefi_fixes() {
-# Copy cpufix.dtbo to overlays directory
- echo "Handling uefi fixes. Installing cpufix.dtbo, dmafix.dtbo and uefi_fixes.txt"
-OVERLAYS_DIR=$(find "$BOOTPART_DIR" -type d -name "overlays" | head -1)
-if [ ! -f "$OVERLAYS_DIR/cpufix.dtbo" ]; then
-    cp "$SCRIPT_DIR/cpufix.dtbo" "$OVERLAYS_DIR/cpufix.dtbo"
-fi
-# Copy dmafix.dtbo to overlays directory
-OVERLAYS_DIR=$(find "$BOOTPART_DIR" -type d -name "overlays" | head -1)
-if [ ! -f "$OVERLAYS_DIR/dmafix.dtbo" ]; then
-    cp "$SCRIPT_DIR/dmafix.dtbo" "$OVERLAYS_DIR/dmafix.dtbo"
-fi
+    echo "Handling uefi fixes. Installing cpufix.dtbo, dmafix.dtbo and uefi_fixes.txt"
+    OVERLAYS_DIR=$(find "$BOOTPART_DIR" -type d -name "overlays" | head -1)
 
-# Handle uefi_fixes.txt
-UEFI_EXTRAS="$BOOTPART_DIR/uefi_fixes.txt"
+    if [ ! -f "$OVERLAYS_DIR/cpufix.dtbo" ]; then
+        cp "$SCRIPT_DIR/cpufix.dtbo" "$OVERLAYS_DIR/cpufix.dtbo"
+    fi
+
+    # Detect Ubuntu by DTB node naming rather than image name
+    if dtc -I dtb -O dts "$OVERLAYS_DIR"/../bcm2711-rpi-4-b.dtb 2>/dev/null | grep -q "emmc2-bus@"; then
+        echo "Ubuntu-style DTB detected - installing dmafix-ubuntu.dtbo as dmafix.dtbo"
+        cp "$SCRIPT_DIR/dmafix-ubuntu.dtbo" "$OVERLAYS_DIR/dmafix.dtbo"
+    else
+        if [ ! -f "$OVERLAYS_DIR/dmafix.dtbo" ]; then
+            cp "$SCRIPT_DIR/dmafix.dtbo" "$OVERLAYS_DIR/dmafix.dtbo"
+        fi
+    fi
+
+    # Handle uefi_fixes.txt
+    UEFI_EXTRAS="$BOOTPART_DIR/uefi_fixes.txt"
     cp "$SCRIPT_DIR/uefi_fixes.txt" "$UEFI_EXTRAS"
 }
 
