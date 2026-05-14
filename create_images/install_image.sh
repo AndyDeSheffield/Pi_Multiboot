@@ -125,16 +125,22 @@ prompt_step() {
 
 handle_uefi_fixes() {
 # Copy cpufix.dtbo to overlays directory
- echo "Handling uefi fixes. Installing cpufix.dtbo and uefi_fixes.txt"
+ echo "Handling uefi fixes. Installing cpufix.dtbo, dmafix.dtbo and uefi_fixes.txt"
 OVERLAYS_DIR=$(find "$BOOTPART_DIR" -type d -name "overlays" | head -1)
 if [ ! -f "$OVERLAYS_DIR/cpufix.dtbo" ]; then
     cp "$SCRIPT_DIR/cpufix.dtbo" "$OVERLAYS_DIR/cpufix.dtbo"
+fi
+# Copy dmafix.dtbo to overlays directory
+OVERLAYS_DIR=$(find "$BOOTPART_DIR" -type d -name "overlays" | head -1)
+if [ ! -f "$OVERLAYS_DIR/dmafix.dtbo" ]; then
+    cp "$SCRIPT_DIR/dmafix.dtbo" "$OVERLAYS_DIR/dmafix.dtbo"
 fi
 
 # Handle uefi_fixes.txt
 UEFI_EXTRAS="$BOOTPART_DIR/uefi_fixes.txt"
     cp "$SCRIPT_DIR/uefi_fixes.txt" "$UEFI_EXTRAS"
 }
+
 generate_grub_entry() {
     local name="$1"
     local model="$2"

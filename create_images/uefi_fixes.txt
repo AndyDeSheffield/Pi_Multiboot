@@ -4,4 +4,5 @@ dtoverlay=miniuart-bt
 dtoverlay=cpufix
 [pi4]
 dtoverlay=cpufix
+dtoverlay=dmafix
 [all]

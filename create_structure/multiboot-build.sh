@@ -254,6 +254,8 @@ fi
 
 # Require root now
 require_root
+BOOTSUFFIX="${MODEL:0:3}"
+BOOTSUFFIX="${BOOTSUFFIX^^}"
 
 # ------------------------------------------------------------
 #  WIPE + PARTITION
@@ -264,7 +266,7 @@ parted -s "$TARGET" mklabel gpt
 CURRENT_START="$START"
 
 if [ "$BOOT_REQ" -eq 1 ]; then
-    parted -s "$TARGET" mkpart "BOOT${MODEL:0:3^^}" fat32 "$CURRENT_START" "$BOOT_END"
+    parted -s "$TARGET" mkpart "BOOT${BOOTSUFFIX}" fat32 "$CURRENT_START" "$BOOT_END"
     CURRENT_START="$BOOT_END"
 fi
 
@@ -290,7 +292,7 @@ mkfs_safe() {
 }
 
 if [ "$BOOT_REQ" -eq 1 ]; then
-    mkfs_safe mkfs.vfat -F32 -n "BOOT${MODEL:0:3^^}" "${TARGET}${PARTNUM}"
+    mkfs_safe mkfs.vfat -F32 -n "BOOT${BOOTSUFFIX}" "${TARGET}${PARTNUM}"
     PARTNUM=$((PARTNUM+1))
 fi
 

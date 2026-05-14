@@ -46,12 +46,12 @@ The disk structure is the following :-
 1. A per Pi model **BOOT\<Model\>** (BOOTPI3,BOOTPI4) partition. This can be on a master drive if you have all the same hardware type or on, for example, its own USB key or microSD with a common drive for other partitions if you want to boot images for the Pi3B and Pi4 on the same master disk \
 It contains the UEFI bootloader and the **grub** binary and **grub.cfg** which the multiboot system relies upon
 2. A single systemwide **SYSTEM** partition. This contains the logic for the non-initramfs multiboot process 
-3. One or more Image partitions on one or more disks. 
+3. One or more **IMAGE** partitions on one or more disks. 
 This contains the os images. Note that some of the utilites provided assume just one such partition but it isn't a hard limitation
 
 ## How it works (no or passive initramfs) 
 Essentially the system works by presenting the kernel with a false **Root** partition. The kernel runs its own PID1 routine,either directly
-or with an initramfs (again, only simple ones are supported). It then chains through to the init process in the false Root partition,
+or with an initramfs (again, only simple ones are supported in this model). It then chains through to the init process in the false Root partition,
 which loop mounts the image of the _real_ Root partition (still in PID1), remounts the critical proc,sys and dev inside it,
 and chroots to the _real_ init (usually /sbin/init)
 The image below describes the flow of this boot process in more detail.
@@ -59,15 +59,16 @@ The image below describes the flow of this boot process in more detail.
 ![boot process](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/documentation_images/bootflow.jpg?raw=true) 
 
 1. The Pi firmware loads the uefi firmware in the boot partition. Note that the (provided) config.txt file used here is minimal. \
-The dtb properties and any overlays along with overlay properties in the original image boot sector config.txt are used to create a pre-merged dtb file for grub. However it is possible to set any global non-dtb properties here,
-although they will be set across all images.
-2. The uefi firmware loads [**shellaa64.efi**](https://github.com/pbatard/UEFI-Shell/release) renamed as BOOTAA64.EFI.
+The dtb properties and any overlays along with overlay properties in the original image boot sector
+ config.txt are used to create a pre-merged dtb file for grub. Some rare non-dtb properties can be set here,
+although they will be set across all images and in fact, very few survive the UEFI boot chain.
+2. The uefi firmware loads [**shellaa64.efi**](https://github.com/pbatard/UEFI-Shell/release), renamed as BOOTAA64.EFI.
  The purpose of this is just to introduce a delay and then request the uefi software to rescan for disk partitions in order to accommodate slow disks.
  It may not be necessary, in which case you can rename grub.efi to BOOTAA64.EFI and take this stage out.
 3. grub loads its config file with the list of bootable images. When an image is selected it scans for the system partition
  and the images partition containing the selected image. It obtains the PARTUUID's and UUID's for the target images partition and system partition,
  passing them as kernel parameters to the next stage.
-4. The kernel is booted along with any minimal non-active initramfs with the system preinit script specified as the INIT parameter
+4. The kernel is booted, along with any minimal non-active initramfs, with the system preinit script specified as the INIT parameter
 5. The preinit script parses the kernel command line to obtain the UUIDs of the target and system partitions.
  It then does a chroot to a simulated, filebased, initrd environment specifying the init script of that environment as next step
 6. The init script (using busybox) loop mounts the root partition of the specified img file, 
@@ -75,7 +76,7 @@ although they will be set across all images.
 7. Second stage boot continues as per normal
 
 ## How it works (active initramfs) 
-OS that use an active initramfs will have inside the initramfs a file at root level /init, which quite often is just a symlink
+OS that use an active initramfs will have inside the initramfs a file at root level '**/init**', which quite often is just a symlink
 to somewhere else. the init file contains or links to the stage 1 boot process, aimed at mounting and running the physical partitions
 of the image. It is necessary to identify the target image and loop mount it before that handover so the the subsequent 
 first stage init can operate on the loop partitions  and not the physical partitions. 
@@ -94,16 +95,18 @@ The following are provided:-
 	- runs raspi_imager to install the requested image to the loop device
 	- runs makedtb to create a composite dtb file for the image in the target directory,
 	  applying the overlays and properties defined in init.txt
-	- copies the kernel from the mounted boot directory to the target directory
+	- copies the kernel and any initramfs from the mounted boot directory to the target directory
+	- copies the original config.txt into that directory for reference
+	- creates a file "untreated_config.txt" containing config.txt lines that have **not** been processed
 	- unmounts the image and deletes the loop
-	- creates a sample grub.cfg entry in the target directory
+	- creates a sugessted Grub entry to cut and paste ino "<boot>/efi/boot/grub.cfg"
 	
 	The user can abort at each step if anything fails and the preceding steps will be backed out
 	
 	it uses 
 	
 	- A modified  raspi-imager pair **Raspberry_Pi_Imager-{x64,arm64}.AppImage** bundle for arm and intel that allows imaging to a loop mount
-    - A tool pair for arm and intel **makedtb-{x64,arm64}** which scan for and parse the config.txt in an image boot sector and
+    - A tool pair for arm and intel **./x64/makedtb|./arm64/makedtb** which scan for and parse the config.txt in an image boot sector and
 	create a merged dtb with all (main) overlays applied and properties (base and overlays) set
 
 3. Some utilities
@@ -115,4 +118,6 @@ The following are provided:-
 See the specific help files 
  - [**Create_Partition_Structure.md**](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/Create_Partition_Structure_Instructions.md)
  for instructions on creating the 3 partition structure on oneormore USB.microSD drives
- _ [**Install_Multiboot_Images.md**](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/Install_Multiboot_Images.md) For instructions on adding an image from the Pi repository.
+ - [**Install_Multiboot_Images.md**](https://github.com/AndyDeSheffield/Pi_Multiboot/blob/main/Install_Multiboot_Images.md) 
+ For instructions on adding an image from the Pi repository.
+ - To follow specific instructions for Fedora, LibreELECT, and Lineage
