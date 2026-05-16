@@ -2,3 +2,4 @@
 *.tar.gz
 create_images/arm64/
 create_images/x64/
+create_images/custom_files/

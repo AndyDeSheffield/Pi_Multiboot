@@ -1,35 +1,122 @@
 #!/bin/bash
 
+set -euo pipefail
+
+#
 # Usage:
-#   sudo ./detachimage.sh image.img
+#   ./detachimage.sh image.img
+#
 
-IMG="$1"
+self_elevate() {
+    if [ "$(id -u)" -ne 0 ]; then
+        if command -v sudo >/dev/null 2>&1; then
+            exec sudo "$0" "$@"
+        else
+            exec su -c "'$0' $*"
+        fi
+    fi
+}
 
-if [ -z "$IMG" ]; then
+self_elevate "$@"
+
+IMG="${1:-}"
+
+if [[ -z "$IMG" ]]; then
     echo "Usage: $0 <imagefile>"
     exit 1
 fi
 
-# Find loop device
-LOOP=$(losetup -j "$IMG" | awk -F: '{print $1}')
+IMG=$(readlink -f "$IMG")
 
-if [ -z "$LOOP" ]; then
-    echo "No loop device found for $IMG"
+if [[ ! -f "$IMG" ]]; then
+    echo "Image file not found:"
+    echo "  $IMG"
+    exit 1
+fi
+
+LOOP=$(losetup -j "$IMG" | awk -F: 'NR==1 {print $1}')
+
+if [[ -z "$LOOP" ]]; then
+    echo "No loop device associated with:"
+    echo "  $IMG"
     exit 0
 fi
 
-echo "Found loop device: $LOOP"
+echo "Found loop device:"
+echo "  $LOOP"
 
-# Unmount any mount points
-for MP in /mnt/image*; do
-    if mount | grep -q "on $MP "; then
-        echo "Unmounting $MP..."
-        umount "$MP" || echo "Warning: failed to unmount $MP"
+echo
+echo "Looking for mounted filesystems..."
+
+MOUNTS=$(mount | awk -v loop="$LOOP" '
+    $1 ~ "^"loop {
+        print $3
+    }
+')
+
+if [[ -n "$MOUNTS" ]]; then
+
+    echo "$MOUNTS" | tac | while read -r MP; do
+
+        [[ -z "$MP" ]] && continue
+
+        echo
+        echo "Unmounting:"
+        echo "  $MP"
+
+        if umount "$MP"; then
+            echo "Unmounted normally."
+        else
+            echo "Normal unmount failed."
+
+            echo "Trying forced unmount..."
+            if umount -f "$MP" 2>/dev/null; then
+                echo "Forced unmount succeeded."
+            else
+                echo "Forced unmount failed."
+
+                echo "Trying lazy unmount..."
+                if umount -l "$MP"; then
+                    echo "Lazy unmount succeeded."
+                else
+                    echo "ERROR: Could not unmount $MP"
+                fi
+            fi
+        fi
+
+        rmdir "$MP" 2>/dev/null || true
+    done
+
+else
+    echo "No mounted partitions found."
+fi
+
+echo
+echo "Detaching loop device..."
+
+if losetup -d "$LOOP"; then
+    echo "Loop detached successfully."
+else
+    echo "Initial detach failed."
+
+    echo "Retrying with partition cleanup..."
+
+    partx -d "$LOOP" 2>/dev/null || true
+    kpartx -d "$LOOP" 2>/dev/null || true
+
+    sleep 1
+
+    if losetup -d "$LOOP"; then
+        echo "Loop detached successfully after cleanup."
+    else
+        echo
+        echo "ERROR: Failed to detach loop device."
+        echo
+        echo "Processes still using it:"
+        fuser -vm "$LOOP" || true
+        exit 1
     fi
-done
+fi
 
-# Detach loop
-echo "Detaching $LOOP..."
-losetup -d "$LOOP" || echo "Warning: failed to detach loop"
-
+echo
 echo "Done."

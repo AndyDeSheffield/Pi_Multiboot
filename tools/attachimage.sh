@@ -1,53 +1,100 @@
 #!/bin/bash
 
+set -euo pipefail
+
+#
 # Usage:
-#   sudo ./attachimage.sh image.img
-#   sudo ./attachimage.sh -m /path/to/image.img
+#   ./attachimage.sh image.img
+#   ./attachimage.sh -m image.img
+#
+
+self_elevate() {
+    if [ "$(id -u)" -ne 0 ]; then
+        if command -v sudo >/dev/null 2>&1; then
+            exec sudo "$0" "$@"
+        else
+            exec su -c "'$0' $*"
+        fi
+    fi
+}
+
+self_elevate "$@"
 
 MOUNT=0
 
-if [ "$1" = "-m" ]; then
+if [[ "${1:-}" == "-m" ]]; then
     MOUNT=1
     shift
 fi
 
-IMG="$1"
+IMG="${1:-}"
 
-if [ -z "$IMG" ]; then
+if [[ -z "$IMG" ]]; then
     echo "Usage: $0 [-m] <imagefile>"
     exit 1
 fi
 
-# Create loop device
-LOOP=$(losetup --show -fP "$IMG")
-if [ -z "$LOOP" ]; then
-    echo "Failed to attach loop device."
+IMG=$(readlink -f "$IMG")
+
+if [[ ! -f "$IMG" ]]; then
+    echo "Image file not found: $IMG"
     exit 1
 fi
 
-echo "Attached to loop device: $LOOP"
+echo "Attaching image:"
+echo "  $IMG"
 
-# If no mounting requested, exit here
-if [ $MOUNT -eq 0 ]; then
+LOOP=$(losetup --find --show --partscan "$IMG")
+
+if [[ -z "$LOOP" ]]; then
+    echo "Failed to create loop device."
+    exit 1
+fi
+
+echo
+echo "Attached loop device:"
+echo "  $LOOP"
+
+if [[ "$MOUNT" -eq 0 ]]; then
     exit 0
 fi
 
-# Check for partitions
-PARTS=$(ls ${LOOP}p* 2>/dev/null | wc -l)
+echo
+echo "Scanning for partitions..."
 
-if [ "$PARTS" -eq 0 ]; then
-    # No partitions → mount whole image
-    mkdir -p /mnt/image1
-    mount "$LOOP" /mnt/image1
-    echo "Mounted $LOOP at /mnt/image1"
-else
-    # Mount each partition
-    i=1
-    for P in ${LOOP}p*; do
-        MP="/mnt/image$i"
-        mkdir -p "$MP"
-        mount "$P" "$MP"
-        echo "Mounted $P at $MP"
-        i=$((i+1))
-    done
+PARTITIONS=()
+
+for P in "${LOOP}"p*; do
+    [[ -e "$P" ]] || continue
+    PARTITIONS+=("$P")
+done
+
+if [[ ${#PARTITIONS[@]} -eq 0 ]]; then
+    PARTITIONS=("$LOOP")
 fi
+
+INDEX=1
+
+for DEV in "${PARTITIONS[@]}"; do
+
+    MP="/mnt/$(basename "$LOOP")p$INDEX"
+
+    mkdir -p "$MP"
+
+    echo
+    echo "Mounting:"
+    echo "  Device : $DEV"
+    echo "  Mount  : $MP"
+
+    if mount "$DEV" "$MP"; then
+        echo "Mounted successfully"
+    else
+        echo "WARNING: mount failed for $DEV"
+        rmdir "$MP" 2>/dev/null || true
+    fi
+
+    INDEX=$((INDEX + 1))
+done
+
+echo
+echo "Done."
