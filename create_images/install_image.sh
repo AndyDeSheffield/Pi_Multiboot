@@ -7,6 +7,7 @@ NAME=""
 MODEL=""
 SIZE=""
 EXPAND=0
+CUSTOMISE=0
 
 ARCH=""
 TARGET_DIR=""
@@ -23,6 +24,7 @@ Usage: $0 -r=<root_mount> -n=<name_of_image> -m=<pi_model> -s=<size> [-e] [-h]
   -n=<name>          Name of image (letters, numbers, '-', '_')
   -m=<pi_model>      Pi model (e.g. pi3b,pi3b+,pi4, pi5)
   -s=<size>          Image size (e.g. 10G)
+  -c                 Apply custom files to the image directory (will not hurt if there are no custom files)
   -e                 Expand root filesystem (only if exactly 2 partitions exist)
   -h                 Show this help
   Note that the script needs to be run with sudo and relies on the device tree compiler (DTC) being available
@@ -36,6 +38,7 @@ for arg in "$@"; do
         -n=*) NAME="${arg#*=}" ;;
         -m=*) MODEL="${arg#*=}" ;;
         -s=*) SIZE="${arg#*=}" ;;
+        -c)   CUSTOMISE=1 ;;
         -e)   EXPAND=1 ;;
         -h|--help)
             usage
@@ -155,7 +158,7 @@ generate_grub_entry() {
     # Replace underscores with spaces for the menu title
     local title="${name//_/ }"
 
-    local grubfile="${target_dir}/Grub_${name}_${model}.cfg"
+    local grubfile="${target_dir}/${name}_${model}_grub.cfg"
 
     echo "Generating GRUB entry: $grubfile"
 
@@ -277,7 +280,10 @@ losetup -d "$LOOPDEV" || true
 LOOPDEV=""
 
 generate_grub_entry "$NAME" "$MODEL" "$TARGET_DIR"
-
+if [[ $CUSTOMISE -eq 1 ]]; then
+    echo "Running customisation (may overwrite generated grub entry)..."
+    python3 "$SCRIPT_DIR/deploy_custom_files.py" "$IMG_PATH"
+fi
 
 echo "Image creation completed successfully."
 echo "Directory: $TARGET_DIR"

@@ -409,8 +409,18 @@ def deploy_files(version_dir: Path, image_path: str, image_name: str):
     for src in files:
         dest_name = f"{image_name}{src.name.removeprefix('osname')}"
         dest = dest_dir / dest_name
-        print(f"[deploy] {src.name} → {dest}")
-        shutil.copy2(src, dest)
+
+        if "grub" in src.name.lower():
+            content = src.read_text()
+            if "<osname>" in content:
+                content = content.replace("<osname>", image_name)
+                print(f"[deploy] {src.name} → {dest} (with osname substitution)")
+            else:
+                print(f"[deploy] {src.name} → {dest}")
+            dest.write_text(content)
+        else:
+            print(f"[deploy] {src.name} → {dest}")
+            shutil.copy2(src, dest)
 
 # ---------------------------------------------------------------------------
 # Main
