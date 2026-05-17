@@ -1,0 +1,77 @@
+#!/bin/sh
+exec 0</dev/console
+exec 1>/dev/console
+exec 2>/dev/console
+set -e
+
+echo "[init] Starting custom init..."
+
+# Basic virtual filesystems
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+mount -t tmpfs tmpfs /run
+mount -t devtmpfs devtmpfs /dev
+
+# Optional debug shell
+echo "[init] Press any key within 5 seconds for debug shell..."
+read -t 5 key || true
+if [ -n "$key" ]; then
+    echo "[init] Entering debug shell. Type 'exit' to continue."
+    /bin/sh
+fi
+
+# udev
+#/usr/lib/systemd/systemd-udevd --daemon || udevd --daemon
+
+modprobe loop
+modprobe uas
+
+udevadm trigger
+udevadm settle
+
+# Parse cmdline
+CMDLINE=$(cat /proc/cmdline)
+TARGET_UUID=$(echo "$CMDLINE" | sed -n 's/.*TARGET_UUID=\([^ ]*\).*/\1/p')
+ROOTIMAGE=$(echo "$CMDLINE" | sed -n 's/.*ROOTIMAGE=\([^ ]*\).*/\1/p')
+ROOTIMAGE="${ROOTIMAGE:-PATH:/Ubuntu_pi4/Ubuntu_pi4.img}"
+
+echo "[init] TARGET_UUID=$TARGET_UUID"
+echo "[init] ROOTIMAGE=$ROOTIMAGE"
+
+PATHVAL="$(echo "$ROOTIMAGE" | sed -n 's/.*PATH:\([^,)]*\).*/\1/p')"
+ROOTPARTVAL="$(echo "$ROOTIMAGE" | sed -n 's/.*ROOTPARTITION:\([^,)]*\).*/\1/p')"
+ROOTPARTVAL="${ROOTPARTVAL:-2}"
+
+TARGETDRIVE=""
+i=0
+while [ $i -lt 20 ]; do
+    TARGETDRIVE=$(blkid 2>/dev/null | /busybox/bin/grep "$TARGET_UUID" | sed 's/:.*//')
+    [ -n "$TARGETDRIVE" ] && break
+    i=$((i+1))
+    sleep 1
+done
+
+if [ -z "$TARGETDRIVE" ]; then
+    echo "[init] ERROR: UUID $TARGET_UUID not found"
+    /bin/sh
+fi
+
+echo "[init] Target drive: $TARGETDRIVE"
+mkdir -p /mnt/images
+mount "$TARGETDRIVE" /mnt/images
+
+ROOTIMAGE="/mnt/images$PATHVAL"
+echo "[init] Image: $ROOTIMAGE"
+
+if [ ! -f "$ROOTIMAGE" ]; then
+    echo "[init] ERROR: Image not found: $ROOTIMAGE"
+    /bin/sh
+fi
+
+modprobe loop
+LOOPDEV="$(losetup -f)"
+losetup -P "$LOOPDEV" "$ROOTIMAGE"
+echo "[init] Loop device: $LOOPDEV"
+
+echo "[init] Handing off to systemd..."
+exec /usr/lib/systemd/systemd

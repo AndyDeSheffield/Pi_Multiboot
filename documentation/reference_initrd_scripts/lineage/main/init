@@ -1,0 +1,155 @@
+#!/busybox/bin/sh
+
+export PATH=/busybox/bin
+
+echo "[my_android-init] First stage started"
+
+# -----------------------------------------------
+# Helper functions
+# -----------------------------------------------
+die() {
+    echo "[my_android-init] ERROR: $1"
+    exec sh
+}
+
+# -----------------------------------------------
+# Mount kernel APIs
+# -----------------------------------------------
+mount -t devtmpfs devtmpfs /dev
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t selinuxfs selinuxfs /sys/fs/selinux
+
+[ -e /dev/loop200 ] || mknod /dev/loop200 b 7 200
+
+# -----------------------------------------------
+# Parse cmdline
+# -----------------------------------------------
+CMDLINE=$(cat /proc/cmdline)
+ROOTIMAGE=$(echo "$CMDLINE" | sed -n 's/.*ROOTIMAGE=\([^ ]*\).*/\1/p')
+TARGET_UUID=$(echo "$CMDLINE" | sed -n 's/.*TARGET_UUID=\([^ ]*\).*/\1/p')
+
+INNER="$(printf '%s\n' "$ROOTIMAGE" | sed 's/^ROOTIMAGE=//; s/^(\(.*\))$/\1/')"
+PATHVAL="$(printf '%s\n' "$INNER" | sed -n 's/.*PATH:\([^,]*\).*/\1/p')"
+
+[ -n "$PATHVAL" ] || die "No PATH in ROOTIMAGE"
+
+# -----------------------------------------------
+# Find target drive
+# -----------------------------------------------
+i=0
+while [ $i -lt 20 ]; do
+    TARGETDRIVE=$(blkid 2>/dev/null | grep "$TARGET_UUID" | sed 's/:.*//')
+    [ -n "$TARGETDRIVE" ] && break
+    i=$((i+1))
+    sleep 1
+done
+[ -n "$TARGETDRIVE" ] || die "target drive not found"
+echo "[my_android-init] Found target drive: $TARGETDRIVE"
+
+# -----------------------------------------------
+# Mount image via loop
+# -----------------------------------------------
+mkdir -p /mnt/images
+mount "$TARGETDRIVE" /mnt/images
+ROOTIMAGE="/mnt/images$PATHVAL"
+[ -f "$ROOTIMAGE" ] || die "image not found: $ROOTIMAGE"
+echo "[my_android-init] Using image: $ROOTIMAGE"
+
+losetup -P /dev/loop200 "$ROOTIMAGE"
+partprobe /dev/loop200
+
+# Create partition nodes
+for part in /sys/block/loop200/loop200p*; do
+    [ -e "$part" ] || break
+    name=$(basename "$part")
+    dev_str=$(cat "$part/dev")
+    maj="${dev_str%%:*}"
+    min="${dev_str##*:}"
+    echo "[my_android-init] Creating /dev/$name ($maj:$min)"
+    mknod "/dev/$name" b "$maj" "$min" 2>/dev/null || true
+done
+# -----------------------------------------------
+# Mount Android partitions
+# System mounted rw initially for setup, then remounted ro
+# -----------------------------------------------
+mkdir -p /newroot
+mount /dev/loop200p5 /newroot
+echo "[my_android-init] Mounted system at /newroot"
+
+mkdir -p /newroot/vendor
+mount -o ro /dev/loop200p6 /newroot/vendor
+echo "[my_android-init] Mounted vendor"
+
+mkdir -p /newroot/metadata
+mount /dev/loop200p7 /newroot/metadata
+echo "[my_android-init] Mounted metadata"
+
+# -----------------------------------------------
+# Fixups while system is rw
+# -----------------------------------------------
+
+# Fix SELinux hash files for system_ext and product
+# (symlinks into /system/system_ext and /system/product)
+mkdir -p /newroot/system/system_ext/etc/selinux
+mkdir -p /newroot/system/product/etc/selinux
+cp /newroot/vendor/etc/selinux/precompiled_sepolicy.system_ext_sepolicy_and_mapping.sha256 \
+   /newroot/system/system_ext/etc/selinux/system_ext_sepolicy_and_mapping.sha256
+cp /newroot/vendor/etc/selinux/precompiled_sepolicy.product_sepolicy_and_mapping.sha256 \
+   /newroot/system/product/etc/selinux/product_sepolicy_and_mapping.sha256
+
+mount -o remount,ro /newroot
+echo "[my_android-init] Remounted system ro"
+
+# Leave userdata for second stage via fstab
+#mkdir -p /newroot/data
+#mount /dev/loop200p3 /newroot/data
+
+# -----------------------------------------------
+# tmpfs mounts that first stage normally sets up
+# -----------------------------------------------
+mount -t tmpfs tmpfs /newroot/mnt
+mkdir -p /newroot/mnt/vendor
+mkdir -p /newroot/mnt/product
+mount -t tmpfs tmpfs /newroot/debug_ramdisk
+mount -t tmpfs tmpfs /newroot/second_stage_resources
+
+# -----------------------------------------------
+# Add missing /dev directories and symlinks
+# -----------------------------------------------
+mkdir -p /dev/socket
+mkdir -p /dev/block/by-name
+mkdir -p /dev/dm-user
+mkdir -p /dev/pts
+mount -t devpts devpts /dev/pts
+ln -s /dev/loop200p3 /dev/block/by-name/userdata
+
+# -----------------------------------------------
+# Optional debug shell
+# -----------------------------------------------
+echo "[my_android-init] Press any key for debug shell (10s)..."
+if read -t 10 -n 1 key; then
+    exec sh
+fi
+
+# Reduce kernel log noise before handing to Android
+echo 1 > /proc/sys/kernel/printk
+
+# -----------------------------------------------
+# Move kernel APIs into newroot
+# selinuxfs moves with /sys
+# -----------------------------------------------
+mount --move /proc /newroot/proc
+mount --move /sys  /newroot/sys
+mount --move /dev  /newroot/dev
+
+# -----------------------------------------------
+# Handoff to Android selinux_setup
+# Replaces first stage init entirely
+# selinux_setup will exec init second_stage
+# -----------------------------------------------
+echo "[my_android-init] Handing off to /system/bin/init selinux_setup"
+exec switch_root /newroot /system/bin/init selinux_setup
+
+echo "[my_android-init] ERROR: switch_root failed"
+exec sh

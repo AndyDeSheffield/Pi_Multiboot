@@ -1,0 +1,65 @@
+#!/bin/sh
+CMDLINE=$(cat /proc/cmdline)
+SYSTEM_PARTUUID=$(echo "$CMDLINE" | sed -n 's/.*SYSTEM_PARTUUID=\([^ ]*\).*/\1/p')
+TARGET_PARTUUID=$(echo "$CMDLINE" | sed -n 's/.*TARGET_PARTUUID=\([^ ]*\).*/\1/p')
+TARGET_UUID=$(echo "$CMDLINE" | sed -n 's/.*TARGET_UUID=\([^ ]*\).*/\1/p')
+ROOTIMAGE=$(echo "$CMDLINE" | sed -n 's/.*ROOTIMAGE=\([^ ]*\).*/\1/p')
+
+
+# Default ROOTIMAGE if none provided
+ROOTIMAGE="${ROOTIMAGE:-ROOTIMAGE=(PATH:/LibreELEC_pi4/LibreELEC_pi4.img)}"
+echo "[init] Parsing ROOTIMAGE: $ROOTIMAGE"
+
+# Strip ROOTIMAGE= and outer parentheses
+INNER="$(printf '%s\n' "$ROOTIMAGE" | sed 's/^ROOTIMAGE=//; s/^(\(.*\))$/\1/')"
+
+# Extract fields
+PATHVAL="$(printf '%s\n' "$INNER" | sed -n 's/.*PATH:\([^,]*\).*/\1/p')"
+ROOTPARTVAL="$(printf '%s\n' "$INNER" | sed -n 's/.*ROOTPARTITION:\([^,]*\).*/\1/p')"
+
+# Default values if missing
+ROOTPARTVAL="${ROOTPARTVAL:-2}"
+# PATHVAL must be valid
+if [ -z "$PATHVAL" ]; then
+    echo "[init] ERROR: No PATH: specified for image root"
+    /bin/sh
+fi
+TARGETDRIVE=""
+i=0
+while [ $i -lt 200 ]; do
+    TARGETDRIVE=$(blkid 2>/dev/null | grep "$TARGET_UUID" | sed 's/:.*//')
+    [ -n "$TARGETDRIVE" ] && break
+    i=$((i+1))
+    usleep 200000
+done
+if [ -z "$TARGETDRIVE" ]; then
+        echo "[init] ERROR: Target drive with UUID $TARGET_UUID never appeared"
+        /bin/sh
+fi
+
+echo "[init] Found target drive: $TARGETDRIVE"
+
+
+mkdir -p /mnt/images
+mount "$TARGETDRIVE" /mnt/images
+ROOTIMAGE="/mnt/images$PATHVAL"
+echo "[init] Using OS image: $ROOTIMAGE"
+
+if [ ! -f "$ROOTIMAGE" ]; then
+    echo "[init] ERROR: OS image not found: $ROOTIMAGE"
+    /bin/sh
+fi
+# Set up loop device
+echo "[init] Setting up loop device..."
+LOOPDEV="$(losetup -f)"
+losetup -P "$LOOPDEV" "$ROOTIMAGE"
+echo "[init] LOOPDEV=$LOOPDEV"
+
+#losetup -fP /mnt/images/LibreELEC_pi4/LibreELEC_pi4.img
+
+echo "Early debug shell (platform_init). Type 'exit' to continue boot."
+echo "[init] Press any key within 5 seconds for debug shell..."
+if read -t 5 -n 1 key; then
+    echo "[init] Entering debug shell. Type 'exit' to continue boot."
+    /bin/sh
+fi

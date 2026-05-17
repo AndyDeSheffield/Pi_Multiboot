@@ -1,0 +1,145 @@
+#!/busybox/bin/sh
+
+export PATH=/busybox/bin
+
+echo "[twrp-init] First stage started"
+
+# -----------------------------------------------
+# Helper functions
+# -----------------------------------------------
+die() {
+    echo "[twrp-init] ERROR: $1"
+    exec sh
+}
+
+# -----------------------------------------------
+# Mount kernel APIs (emulating first_stage_init)
+# -----------------------------------------------
+echo "[twrp-init] fb0 status at start:"
+ls /dev/fb0 2>/dev/null && echo "EXISTS" || echo "MISSING"
+cat /sys/class/drm/card0-HDMI-A-1/status 2>/dev/null
+echo "[twrp-init] connector status at start:"
+cat /sys/class/drm/card0-HDMI-A-1/status 2>/dev/null || echo "not available yet"
+
+mount -t devtmpfs devtmpfs /dev
+mkdir -p /dev/pts
+mkdir -p /dev/socket
+mount -t devpts devpts /dev/pts
+mount -t proc -o hidepid=2,gid=3009 proc /proc
+chmod 0440 /proc/cmdline
+mount -t sysfs sysfs /sys
+mount -t selinuxfs selinuxfs /sys/fs/selinux
+
+# Character devices needed before ueventd
+mknod /dev/kmsg    c 1 11
+mknod /dev/random  c 1 8
+mknod /dev/urandom c 1 9
+mknod /dev/ptmx    c 5 2
+mknod /dev/null    c 1 3
+
+# tmpfs mounts first_stage normally creates
+mount -t tmpfs -o mode=0755,uid=0,gid=1000,noexec,nosuid,nodev tmpfs /mnt
+mkdir -p /mnt/vendor
+mkdir -p /mnt/product
+mount -t tmpfs -o mode=0755,noexec,nosuid,nodev tmpfs /debug_ramdisk
+
+# -----------------------------------------------
+# Parse cmdline
+# -----------------------------------------------
+CMDLINE=$(cat /proc/cmdline)
+ROOTIMAGE=$(echo "$CMDLINE" | sed -n 's/.*ROOTIMAGE=\([^ ]*\).*/\1/p')
+TARGET_UUID=$(echo "$CMDLINE" | sed -n 's/.*TARGET_UUID=\([^ ]*\).*/\1/p')
+
+INNER="$(printf '%s\n' "$ROOTIMAGE" | sed 's/^ROOTIMAGE=//; s/^(\(.*\))$/\1/')"
+PATHVAL="$(printf '%s\n' "$INNER" | sed -n 's/.*PATH:\([^,]*\).*/\1/p')"
+
+[ -n "$PATHVAL" ] || die "No PATH in ROOTIMAGE"
+
+# -----------------------------------------------
+# Find target drive
+# -----------------------------------------------
+i=0
+while [ $i -lt 20 ]; do
+    TARGETDRIVE=$(blkid 2>/dev/null | grep "$TARGET_UUID" | sed 's/:.*//')
+    [ -n "$TARGETDRIVE" ] && break
+    i=$((i+1))
+    sleep 1
+done
+[ -n "$TARGETDRIVE" ] || die "target drive not found"
+echo "[twrp-init] Found target drive: $TARGETDRIVE"
+
+# -----------------------------------------------
+# Mount image via loop
+# -----------------------------------------------
+[ -e /dev/loop200 ] || mknod /dev/loop200 b 7 200
+
+mkdir -p /mnt/images
+mount "$TARGETDRIVE" /mnt/images
+ROOTIMAGE="/mnt/images$PATHVAL"
+[ -f "$ROOTIMAGE" ] || die "image not found: $ROOTIMAGE"
+echo "[twrp-init] Using image: $ROOTIMAGE"
+
+losetup -P /dev/loop200 "$ROOTIMAGE"
+partprobe /dev/loop200
+
+# Create partition nodes
+for part in /sys/block/loop200/loop200p*; do
+    [ -e "$part" ] || break
+    name=$(basename "$part")
+    dev_str=$(cat "$part/dev")
+    maj="${dev_str%%:*}"
+    min="${dev_str##*:}"
+    echo "[twrp-init] Creating /dev/$name ($maj:$min)"
+    mknod "/dev/$name" b "$maj" "$min" 2>/dev/null || true
+done
+
+# -----------------------------------------------
+# Create by-name symlinks for TWRP recovery.fstab
+# -----------------------------------------------
+mkdir -p /dev/block/by-name
+ln -s /dev/loop200p1 /dev/block/by-name/boot
+ln -s /dev/loop200p5 /dev/block/by-name/system
+ln -s /dev/loop200p3 /dev/block/by-name/userdata
+ln -s /dev/loop200p6 /dev/block/by-name/vendor
+ln -s /dev/loop200p7 /dev/block/by-name/metadata
+
+# -----------------------------------------------
+# Optional debug shell
+# -----------------------------------------------
+echo "[twrp-init] Press any key for debug shell (10s)..."
+if read -t 10 -n 1 key; then
+    exec sh
+fi
+
+# -----------------------------------------------
+# Hand off to selinux_setup
+# No switch_root - recovery ramdisk IS the root
+# selinux_setup will exec second_stage
+# second_stage reads recovery init.rc -> TWRP
+# -----------------------------------------------
+echo "[twrp-init] Waiting for fb0..."
+# Redirect stdio to /dev/null like first_stage_init does
+exec 0</dev/null
+exec 1>/dev/null
+exec 2>/dev/null
+
+i=0
+while [ $i -lt 60 ]; do
+    [ -e /dev/fb0 ] && break
+    sleep 1
+    i=$((i+1))
+done
+[ -e /dev/fb0 ] && echo "[twrp-init] fb0 ready" || echo "[twrp-init] fb0 timeout"
+
+# Trigger vc4 hotplug re-evaluation
+#echo "[twrp-init] Triggering hotplug..."
+#echo 0 > /sys/module/vc4/parameters/force_hotplug
+#sleep 1
+# Redirect stdio to /dev/kmsg like first_stage_init does
+exec >/dev/kmsg 2>&1
+
+echo "[twrp-init] Handing off to /system/bin/init selinux_setup"
+exec /system/bin/init selinux_setup
+
+echo "[twrp-init] ERROR: exec failed"
+exec sh
