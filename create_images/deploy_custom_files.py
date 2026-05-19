@@ -49,7 +49,7 @@ class CleanupManager:
 
     def cleanup(self, label: str = ""):
         if label:
-            print(f"\n[cleanup] {label}")
+            vprint(5,f"\n[cleanup] {label}")
 
         # Unmount in reverse registration order
         for mnt in reversed(self._mounts):
@@ -161,53 +161,24 @@ def _has_raspi_list(root: str) -> bool:
     )
 
 
-def _detect_libreelec(mntdir: str) -> dict | None:
+def _get_partition_uuids(loopdev: str) -> list:
     """
-    Detect LibreELEC by scanning the SYSTEM squashfs binary for a version
-    string. Reads in chunks and stops as soon as the pattern is found,
-    avoiding a full 100MB+ scan in the common case.
-    Returns a detection dict or None if not LibreELEC.
+    Return an ordered list of UUIDs for all partitions on loopdev.
+    Index 0 = partition 1, index 1 = partition 2, etc.
+    None is stored for any partition with no UUID (e.g. FAT without one).
     """
-    system_path = os.path.join(mntdir, "SYSTEM")
-    if not os.path.isfile(system_path):
-        return None
-
-    print(f"[detect] Found SYSTEM file, scanning for LibreELEC version...")
-
-    pattern     = b'LibreELEC'
-    version_re  = re.compile(rb'LibreELEC-[\w.]+\.-?(\d+\.\d+(?:\.\d+)?)')
-    chunk_size  = 1024 * 1024   # 1 MB
-    overlap     = 64            # carry-over to catch boundary splits
-
-    prev = b''
-    with open(system_path, 'rb') as f:
-        while True:
-            chunk = f.read(chunk_size)
-            if not chunk:
-                break
-            data = prev + chunk
-            if pattern in data:
-                m = version_re.search(data)
-                if m:
-                    version = m.group(1).decode()
-                    # Use only major version for bracket matching
-                    version_major = version.split(".")[0]
-                    print(f"[detect] LibreELEC version string: {version}")
-                    try:
-                        version_f = float(version_major)
-                    except ValueError:
-                        version_f = 0.0
-                    return {
-                        "os_name":   "libreelec",
-                        "version":   version_major,
-                        "version_f": version_f,
-                    }
-            prev = chunk[-overlap:]
-
-    # SYSTEM file found but no version string — still flag as LibreELEC
-    print(f"[detect] SYSTEM file found but version unreadable, defaulting to 0")
-    return {"os_name": "libreelec", "version": "0", "version_f": 0.0}
-
+    uuids = []
+    for part in _get_loop_partitions(loopdev):
+        result = _run(
+            ["blkid", "-s", "UUID", "-o", "value", part],
+            check=False, capture=True, silent=True
+        )
+        if result.returncode == 0:
+            uuid = result.stdout.decode().strip() or None
+        else:
+            uuid = None
+        uuids.append(uuid)
+    return uuids
 
 # ---------------------------------------------------------------------------
 # Partition scanning
@@ -232,21 +203,136 @@ def _try_mount(partition: str, mountpoint: str) -> bool:
     return result.returncode == 0
 
 
+def _not_found() -> dict:
+    """Standard not-found result."""
+    return {"found": False, "os_name": "", "version": "0",
+            "version_f": 0.0, "uuids": []}
+
+
+def _detect_linux(mntdir: str, uuids: list) -> dict:
+    """
+    Try to detect a Linux OS via os-release.
+    Returns a result dict with found=True on success, found=False otherwise.
+    """
+    vprint(4,f"[detect] Checking for a Linux ")
+
+    osrel = _read_os_release(mntdir)
+    if not osrel:
+        return _not_found()
+
+    os_id = osrel.get("ID", "linux").lower()
+    version = osrel.get("VERSION_ID", "0").split(".")[0]
+
+    if os_id == "debian" and _has_raspi_list(mntdir):
+        os_id = "raspbian"
+        vprint(3,f"[detect] Detected raspbian (debian + raspi.list)")
+
+    vprint(3,f"[detect] OS: {os_id}, VERSION_ID: {version}")
+
+    try:
+        version_f = float(version)
+    except ValueError:
+        vprint(3,f"[detect] Version unreadable, defaulting to 0")
+        version_f = 0.0
+
+    return {"found": True, "os_name": os_id, "version": version,
+            "version_f": version_f, "uuids": uuids}
+
+
+def _detect_android(mntdir: str, uuids: list) -> dict:
+    """
+    Try to detect Android / LineageOS via build.prop.
+    Returns a result dict with found=True on success, found=False otherwise.
+    """
+    vprint(4,f"[detect] Checking for Android (Lineage)")
+    props = _read_build_prop(mntdir)
+    if not props:
+        return _not_found()
+
+    os_name_raw = props.get("ro.build.flavor",
+                  props.get("ro.product.name", "android")).lower()
+    version = props.get("ro.build.version.release", "0").split(".")[0]
+
+    os_id = "lineage" if ("lineage" in os_name_raw or
+                          "lineageos" in os_name_raw) else "android"
+
+    vprint(3,f"[detect] OS: {os_id} (Android), version: {version}")
+
+    try:
+        version_f = float(version)
+    except ValueError:
+        vprint(3,f"[detect] Version unreadable, defaulting to 0")
+        version_f = 0.0
+
+    return {"found": True, "os_name": os_id, "version": version,
+            "version_f": version_f, "uuids": uuids}
+
+
+def _detect_libreelec(mntdir: str, uuids: list) -> dict:
+    """
+    Detect LibreELEC by scanning the SYSTEM squashfs binary for a version
+    string. Reads in chunks and stops as soon as the pattern is found,
+    avoiding a full 100MB+ scan in the common case.
+    Returns a result dict with found=True on success, found=False otherwise.
+    """
+    vprint(4,f"[detect] Checking for LibreELEC")
+
+    system_path = os.path.join(mntdir, "SYSTEM")
+    if not os.path.isfile(system_path):
+        return _not_found()
+
+    vprint(5,f"[detect] Found SYSTEM file, scanning for LibreELEC version...")
+
+    pattern    = b'LibreELEC'
+    version_re = re.compile(rb'LibreELEC-[\w.]+\.-?(\d+\.\d+(?:\.\d+)?)')
+    chunk_size = 1024 * 1024   # 1 MB
+    overlap    = 64            # carry-over to catch boundary splits
+
+    prev = b''
+    with open(system_path, 'rb') as f:
+        while True:
+            chunk = f.read(chunk_size)
+            if not chunk:
+                break
+            data = prev + chunk
+            if pattern in data:
+                m = version_re.search(data)
+                if m:
+                    version = m.group(1).decode()
+                    version_major = version.split(".")[0]
+                    vprint(3,f"[detect] LibreELEC version string: {version}")
+                    try:
+                        version_f = float(version_major)
+                    except ValueError:
+                        version_f = 0.0
+                    return {"found": True, "os_name": "libreelec",
+                            "version": version_major, "version_f": version_f,
+                            "uuids": uuids}
+            prev = chunk[-overlap:]
+
+    # SYSTEM file found but version unreadable — still LibreELEC
+    vprint(3,f"[detect] Version unreadable, defaulting to 0")
+    return {"found": True, "os_name": "libreelec", "version": "0",
+            "version_f": 0.0, "uuids": uuids}
+
+
 def detect_os(loopdev: str, cleanup: CleanupManager) -> dict:
     """
-    Iterate through partitions on loopdev looking for the root/system
-    filesystem. Returns a dict with keys:
-        os_name    - normalised lowercase name (ubuntu, debian, raspbian,
-                     fedora, lineage, android, …)
-        version    - numeric string e.g. "22", "22.04", "17"
-        version_f  - float for range comparisons
-    Raises RuntimeError if detection fails.
+    Iterate through partitions on loopdev, trying each detector in order.
+    Returns a dict with keys: os_name, version, version_f, uuids, found.
+    Raises RuntimeError if no partition is recognised.
     """
     partitions = _get_loop_partitions(loopdev)
     if not partitions:
         raise RuntimeError(f"No partitions found on {loopdev}")
 
-    print(f"[detect] Found partitions: {', '.join(partitions)}")
+    vprint(5,f"[detect] Found partitions: {', '.join(partitions)}")
+
+    # Gather all UUIDs once upfront — passed to whichever detector succeeds
+    uuids = _get_partition_uuids(loopdev)
+    vprint(4,f"[detect] Partition UUIDs: {uuids}")
+
+    detectors = [_detect_linux, _detect_android, _detect_libreelec]
 
     for part in partitions:
         mntdir = tempfile.mkdtemp(prefix="multiboot_probe_")
@@ -254,74 +340,22 @@ def detect_os(loopdev: str, cleanup: CleanupManager) -> dict:
 
         if not _try_mount(part, mntdir):
             os.rmdir(mntdir)
+            cleanup._tempdirs.remove(mntdir)
             continue
 
         cleanup.register_mount(mntdir)
-        print(f"[detect] Mounted {part} → {mntdir}")
+        vprint(5,f"[detect] Mounted {part} → {mntdir}")
 
-        # --- Try Linux first via os-release ---
-        osrel = _read_os_release(mntdir)
-        if osrel:
-            os_id = osrel.get("ID", "linux").lower()
-            version = osrel.get("VERSION_ID", "0").split(".")[0]  # major part
+        for detector in detectors:
+            result = detector(mntdir, uuids)
+            if result["found"]:
+                _run(["umount", mntdir], check=False, silent=True)
+                cleanup._mounts.remove(mntdir)
+                os.rmdir(mntdir)
+                cleanup._tempdirs.remove(mntdir)
+                return result
 
-            # Distinguish Raspbian from Debian
-            if os_id == "debian" and _has_raspi_list(mntdir):
-                os_id = "raspbian"
-                print(f"[detect] Detected raspbian (debian + raspi.list)")
-
-            print(f"[detect] OS: {os_id}, VERSION_ID: {version}")
-
-            # Unmount – we have what we need
-            _run(["umount", mntdir], check=False, silent=True)
-            cleanup._mounts.remove(mntdir)
-            os.rmdir(mntdir)
-            cleanup._tempdirs.remove(mntdir)
-
-            try:
-                version_f = float(version)
-            except ValueError:
-                version_f = 0.0
-
-            return {"os_name": os_id, "version": version, "version_f": version_f}
-
-        # --- Try Android / LineageOS via build.prop ---
-        props = _read_build_prop(mntdir)
-        if props:
-            os_name_raw = props.get("ro.build.flavor",
-                           props.get("ro.product.name", "android")).lower()
-            version = props.get("ro.build.version.release", "0").split(".")[0]
-
-            # Normalise to "lineage" or "android"
-            if "lineage" in os_name_raw or "lineageos" in os_name_raw:
-                os_id = "lineage"
-            else:
-                os_id = "android"
-
-            print(f"[detect] OS: {os_id} (Android), version: {version}")
-
-            _run(["umount", mntdir], check=False, silent=True)
-            cleanup._mounts.remove(mntdir)
-            os.rmdir(mntdir)
-            cleanup._tempdirs.remove(mntdir)
-
-            try:
-                version_f = float(version)
-            except ValueError:
-                version_f = 0.0
-
-            return {"os_name": os_id, "version": version, "version_f": version_f}
-
-        # --- Last resort: LibreELEC via SYSTEM binary scan ---
-        libreelec = _detect_libreelec(mntdir)
-        if libreelec:
-            _run(["umount", mntdir], check=False, silent=True)
-            cleanup._mounts.remove(mntdir)
-            os.rmdir(mntdir)
-            cleanup._tempdirs.remove(mntdir)
-            return libreelec
-
-        # Nothing useful on this partition – unmount and move on
+        # Nothing found on this partition — unmount and move on
         _run(["umount", mntdir], check=False, silent=True)
         cleanup._mounts.remove(mntdir)
         os.rmdir(mntdir)
@@ -393,15 +427,18 @@ def find_version_dir(custom_files_root: Path, os_name: str,
 # File deployment
 # ---------------------------------------------------------------------------
 
-def deploy_files(version_dir: Path, image_path: str, image_name: str):
+def deploy_files(version_dir: Path, image_path: str, image_name: str,
+                 uuids: list = []):
     """
     Copy every file from version_dir into image_path, prefixing each
-    filename with '<image_name>_'.
+    filename with '<image_name>'. Files named 'osname.*' get just the
+    extension appended; all others get '_filename' appended.
+    Grub files have <osname> and <osname_UUID_N> (1-based) substituted.
     """
     files = [f for f in version_dir.iterdir() if f.is_file()]
     if not files:
-        print(f"[deploy] Warning: no files found in {version_dir}")
-        return
+        vprint(3,f"[deploy] Warning: no files found in {version_dir}")
+        return()
 
     dest_dir = Path(image_path)
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -412,33 +449,52 @@ def deploy_files(version_dir: Path, image_path: str, image_name: str):
 
         if "grub" in src.name.lower():
             content = src.read_text()
-            if "<osname>" in content:
-                content = content.replace("<osname>", image_name)
-                print(f"[deploy] {src.name} → {dest} (with osname substitution)")
-            else:
-                print(f"[deploy] {src.name} → {dest}")
+            content = content.replace("<osname>", image_name)
+            subs = ["<osname>"]
+            for i, uuid in enumerate(uuids, start=1):
+                placeholder = f"<osname_UUID_{i}>"
+                if uuid and placeholder in content:
+                    content = content.replace(placeholder, uuid)
+                    subs.append(placeholder)
+            vprint(5,f"[deploy] {src.name} → {dest} "
+                  f"(substituted: {', '.join(subs)})")
             dest.write_text(content)
         else:
-            print(f"[deploy] {src.name} → {dest}")
+            vprint(5,f"[deploy] {src.name} → {dest}")
             shutil.copy2(src, dest)
+
+    vprint(2,f"[deploy] Deployed {len(files)} file(s) to {dest_dir}")
+
+
+def vprint(level: int, *args, stream=sys.stdout, **kwargs):
+    if level > verbosity:
+        return
+    print(*args, file=stream, **kwargs)
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-
+verbosity = 3  # default
 def main():
+    global verbosity
+    for arg in sys.argv[1:]:
+        if arg.startswith("-v") and len(arg) > 2 and arg[2:].isdigit():
+            verbosity = int(arg[2:])
+            sys.argv.remove(arg)
+            break
+
     if os.geteuid() != 0:
-        print("Error: this script must be run as root (sudo).", file=sys.stderr)
+        vprint(1,"Error: this script must be run as root (sudo).", stream=sys.stderr)
         sys.exit(1)
 
     if len(sys.argv) != 2:
-        print(f"Usage: sudo {sys.argv[0]} /path/to/image.img", file=sys.stderr)
+        vprint(2,f"Usage: sudo {sys.argv[0]} -v[0..5] /path/to/image.img", stream=sys.stderr)
         sys.exit(1)
 
     img_file = sys.argv[1]
 
     if not os.path.isfile(img_file):
-        print(f"Error: image file not found: {img_file}", file=sys.stderr)
+        vprint(1,f"Error: image file not found: {img_file}", stream=sys.stderr)
         sys.exit(1)
 
     # --- Derive imagepath and imagename ---
@@ -448,14 +504,14 @@ def main():
     script_dir    = Path(__file__).resolve().parent
     custom_files  = script_dir / "custom_files"
 
-    print(f"[init] Image  : {img_file}")
-    print(f"[init] Path   : {image_path}")
-    print(f"[init] Name   : {image_name}")
-    print(f"[init] Scripts: {script_dir}")
+    vprint(5,f"[init] Image  : {img_file}")
+    vprint(5,f"[init] Path   : {image_path}")
+    vprint(5,f"[init] Name   : {image_name}")
+    vprint(5,f"[init] Scripts: {script_dir}")
 
     if not custom_files.is_dir():
-        print(f"Error: custom_files directory not found at {custom_files}",
-              file=sys.stderr)
+        vprint(1,f"Error: custom_files directory not found at {custom_files}",
+              stream=sys.stderr)
         sys.exit(1)
 
     # --- Loop-mount the image ---
@@ -466,50 +522,53 @@ def main():
         )
         loopdev = result.stdout.decode().strip()
     except subprocess.CalledProcessError as e:
-        print(f"Error: losetup failed: {e}", file=sys.stderr)
+        vprint(1,f"Error: losetup failed: {e}", stream=sys.stderr)
         sys.exit(1)
 
     _cleanup.register_loopdev(loopdev)
-    print(f"[loop] Attached {img_file} → {loopdev}")
+    vprint(5,f"[loop] Attached {img_file} → {loopdev}")
 
     try:
         # --- Detect OS ---
         info = detect_os(loopdev, _cleanup)
-        print(f"[info] OS={info['os_name']}  version={info['version']}  "
+        vprint(2,f"[info] OS={info['os_name']}  version={info['version']}  "
               f"(numeric {info['version_f']})")
+        vprint(2,f"[info] UUIDs: { {i+1: u for i, u in enumerate(info['uuids'])} }")
 
         # --- Find matching version directory ---
         version_dir = find_version_dir(custom_files, info["os_name"],
                                        info["version_f"])
-        print(f"[match] Using files from: {version_dir}")
+        vprint(3,f"[match] Using files from: {version_dir}")
 
         # --- Confirm before deploying ---
-        print(f"\n  Custom files from : {version_dir}")
-        print(f"  Will be copied to : {image_path}")
-        print(f"  Prefixed with     : {image_name}_\n")
-        answer = input("Continue? [Y/n]: ").strip().lower()
-        if answer not in ("", "y", "yes"):
-            print("Aborted by user.")
-            _cleanup.cleanup("Cleaning up after user abort")
-            sys.exit(0)
+        if verbosity >= 3:
+            vprint(3,f"\n  Custom files from : {version_dir}")
+            vprint(3,f"  Will be copied to : {image_path}")
+            vprint(3,f"  Prefixed with     : {image_name}_\n")
+            answer = input("Continue? [Y/n]: ").strip().lower()
+            if answer not in ("", "y", "yes"):
+                vprint(3,"Aborted by user.")
+                _cleanup.cleanup("Cleaning up after user abort")
+                sys.exit(0)
 
         # --- Deploy files ---
-        deploy_files(version_dir, image_path, image_name)
+        deploy_files(version_dir, image_path, image_name,
+                     uuids=info.get("uuids", []))
 
     except (RuntimeError, FileNotFoundError) as e:
-        print(f"Error: {e}", file=sys.stderr)
+        vprint(1,f"Error: {e}", stream=sys.stderr)
         _cleanup.cleanup("Cleaning up after error")
         sys.exit(1)
 
     except Exception as e:
-        print(f"Unexpected error: {e}", file=sys.stderr)
+        vprint(1,f"Unexpected error: {e}", stream=sys.stderr)
         _cleanup.cleanup("Cleaning up after unexpected error")
         raise
 
     finally:
         _cleanup.cleanup("Final cleanup")
 
-    print("[done] Complete.")
+    vprint(2,"[done] Complete.")
 
 
 if __name__ == "__main__":

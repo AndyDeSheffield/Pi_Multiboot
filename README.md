@@ -35,6 +35,7 @@ There are some limitations to what this system will boot:-
    -  Raspberry Pi OS (64-bit)Trixie
    -  Raspberry PI OS Lite Trixie (64 bit)
    -  Ubuntu Server 25.10 (64 bit)
+   -  Ubuntu Workstation 26.04 (64 bit) *  - Note that Ubuntu has moved to a complex initramfs much like fedora with this version
    -  Fedora-Workstation-Disk-43-1.6 *
    -  LibreELECT 12.2.1 *
    -  Lineage-23.2-20260128-UNOFFICIAL-KonstaKANG-rpi4 (includes booting to twrp as a seperate grub entry) *
@@ -100,6 +101,7 @@ The following are provided:-
 	- creates a file "untreated_config.txt" containing config.txt lines that have **not** been processed
 	- unmounts the image and deletes the loop
 	- creates a sugessted Grub entry to cut and paste ino "<boot>/efi/boot/grub.cfg"
+	- runs a costomisation program that copies in any required additional files for each image (the ones designated with a *)
 	
 	The user can abort at each step if anything fails and the preceding steps will be backed out
 	
@@ -108,6 +110,7 @@ The following are provided:-
 	- A modified  raspi-imager pair **Raspberry_Pi_Imager-{x64,arm64}.AppImage** bundle for arm and intel that allows imaging to a loop mount
     - A tool pair for arm and intel **./x64/makedtb|./arm64/makedtb** which scan for and parse the config.txt in an image boot sector and
 	create a merged dtb with all (main) overlays applied and properties (base and overlays) set
+	- a seperate python script **deploy_custom_files.py** which detects certain specific images that require custom files and copies them in
 
 3. Some utilities
     - A shell script  **makeimage.sh** to make a seperate blank **.img** file of the desired name and size in MB
