@@ -36,19 +36,20 @@ your target partition is of course ~/realimages
 cd ~/Pi_Multiboot/create_images
 ./install_image.sh -h
 
-Usage: ./install_image.sh -r=<root_mount> -n=<name_of_image> -m=<pi_model> -s=<size> [-e] [-h]
-  -r=<root_mount>    Root of mounted image disk (e.g. -r=/mnt/realimages)  
-  -n=<name>          Name of image (letters, numbers, '-', '_')  
-  -m=<pi_model>      Pi model (e.g. pi3b,pi3b+,pi4, pi5)  
-  -s=<size>          Image size (e.g. 10G)  
-  -e                 Expand root filesystem (only if exactly 2 partitions exist)  
-  -h                 Show this help  
-  Note that the script needs to be run with sudo  
+Usage: $0 -r=<root_mount> -n=<name_of_image> -m=<pi_model> -s=<size> [-e] [-h]
+  -r=<root_mount>    Root of mounted image disk (e.g. -r=/mnt/realimages)
+  -n=<name>          Name of image (letters, numbers, '-', '_')
+  -m=<pi_model>      Pi model (e.g. pi3b,pi3b+,pi4, pi5)
+  -s=<size>          Image size (e.g. 10G)
+  -c                 Apply custom files to the image directory (will not hurt if there are no custom files)
+  -e                 Expand root filesystem (only if exactly 2 partitions exist)
+  -h                 Show this help
+  Note that the script needs to be run with sudo and relies on the device tree compiler (DTC) being available
 ```
 - 
 - Run the tool as sudo with the appropriate parameters
 ```
-sudo ./install_image.sh -r=/mnt/realimages -n=My_New_OS -m=pi4 -s=10G -e
+sudo ./install_image.sh -r=/mnt/realimages -n=My_New_OS -m=pi4 -s=10G -e -c
 ```
 1) Step 1 creates the blank .img file on the root Mount  
 ```
@@ -59,11 +60,13 @@ Step 1 completed. Continue (c) or Abort (a)? [c/a]:
 ```
 2) Step 2 runs a modified version of the raspi-imager that accepts loop mounts as targets
 ```
+Continuing...
 Step 2: Loop-mounting image and running Raspberry Pi Imager...
 Loop device: /dev/loop2
 Launching Raspberry Pi Imager...
 Refreshing loop partitions...
 Reattached loop device: /dev/loop2
+
 ```
 Follow the usual imaging process selecting the loop device attached to your image as the target 
 <div>
@@ -101,10 +104,13 @@ Step 2 completed. Continue (c) or Abort (a)? [c/a]:
       to add any desired values.
    -  The config.txt from the original boot partition is extracted for reference and a file "untreated_config.txt" is created showing
       lines that it has not been possible to process.
+   -  If the -e option is selected the root partition of the new image will be expanded to fill the img file
+   -  If the -c option is selected then custom files for the image will be copied into the directory where the img file is hosted.
+      Details of what will be copied are displayed and you can confirm the copy before it is made
 ```
 Continuing...
 Step 3: Extracting DTB and kernel...
-Handling uefi fixes. Installing cpufix.dtbo and uefi_fixes.txt
+Handling uefi fixes. Installing cpufix.dtbo, dmafix.dtbo and uefi_fixes.txt
 Model: pi4 (index 5)
 Boot directory: ./bootpart
 Will output to : /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4{.dtb,.kernel,.cmdline,.initrd}
@@ -114,18 +120,23 @@ Any kernel, cmdline and initrd files will be copied (-x specified.)
 UNTREATED CONFIG LINES stored in  /mnt/realimages/My_New_OS_pi4/untreated_config.txt
 uefi_fixes.txt found and will be processed after config.txt
 COPYING FULL Config.txt ./bootpart/config.txt to /mnt/realimages/My_New_OS_pi4/config.txt
-COPYING DEFAULT KERNEL ./bootpart/kernel8.img to /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4.kernel
-COPYING DEFAULT INITRAMFS ./bootpart/initramfs8 to /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4.initrd
-COPYING COMMAND LINE ./bootpart/cmdline.txt to /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4.cmdline
+COPYING SPECIFIED KERNEL ./bootpart/current/vmlinuz to /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4.kernel
+COPYING INITRAMFS ./bootpart/current/initrd.img to /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4.initrd
 SET_BASE_PROPERTY (group 0): audio=on
-LOAD_OVERLAY (group 1): ./bootpart/overlays/vc4-kms-v3d-pi4.dtbo
-APPLY_OVERLAY (group 1): ./bootpart/overlays/vc4-kms-v3d-pi4.dtbo
-LOAD_OVERLAY (group 2): ./bootpart/overlays/miniuart-bt.dtbo
-APPLY_OVERLAY (group 2): ./bootpart/overlays/miniuart-bt.dtbo
-LOAD_OVERLAY (group 3): ./bootpart/overlays/cpufix.dtbo
-APPLY_OVERLAY (group 3): ./bootpart/overlays/cpufix.dtbo
-LOAD_OVERLAY (group 4): ./bootpart/overlays/upstream-pi4.dtbo
-APPLY_OVERLAY (group 4): ./bootpart/overlays/upstream-pi4.dtbo
+SET_BASE_PROPERTY (group 1): i2c_arm=on
+SET_BASE_PROPERTY (group 2): spi=on
+SET_BASE_PROPERTY (group 3): watchdog=on
+Warning: unknown base dtparam 'watchdog' ignored
+LOAD_OVERLAY (group 4): ./bootpart/current/overlays/vc4-kms-v3d-pi4.dtbo
+APPLY_OVERLAY (group 4): ./bootpart/current/overlays/vc4-kms-v3d-pi4.dtbo
+LOAD_OVERLAY (group 5): ./bootpart/current/overlays/dwc2.dtbo
+APPLY_OVERLAY (group 5): ./bootpart/current/overlays/dwc2.dtbo
+LOAD_OVERLAY (group 6): ./bootpart/current/overlays/miniuart-bt.dtbo
+APPLY_OVERLAY (group 6): ./bootpart/current/overlays/miniuart-bt.dtbo
+LOAD_OVERLAY (group 7): ./bootpart/current/overlays/cpufix.dtbo
+APPLY_OVERLAY (group 7): ./bootpart/current/overlays/cpufix.dtbo
+LOAD_OVERLAY (group 8): ./bootpart/current/overlays/dmafix.dtbo
+APPLY_OVERLAY (group 8): ./bootpart/current/overlays/dmafix.dtbo
 COPYING MERGED DTB to /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4.dtb
 Files sucessfully created
 Step 3.7: Optional expansion...
@@ -137,44 +148,53 @@ Partition Table: msdos
 Disk Flags:
 
 Number  Start   End     Size    Type     File system  Flags
- 1      8389kB  545MB   537MB   primary  fat32        lba
- 2      545MB   6451MB  5906MB  primary  ext4
+ 1      1049kB  538MB   537MB   primary  fat32        boot, lba
+ 2      538MB   8922MB  8384MB  primary  ext4
 
 e2fsck 1.47.2 (1-Jan-2025)
 Pass 1: Checking inodes, blocks, and sizes
 Pass 2: Checking directory structure
 Pass 3: Checking directory connectivity
+Pass 3A: Optimizing directories
 Pass 4: Checking reference counts
 Pass 5: Checking group summary information
-rootfs: 138407/360448 files (0.1% non-contiguous), 1269154/1441792 blocks
+
+writable: ***** FILE SYSTEM WAS MODIFIED *****
+writable: 121987/512064 files (0.1% non-contiguous), 1377596/2046785 blocks
 resize2fs 1.47.2 (1-Jan-2025)
-Resizing the filesystem on /dev/loop2p2 to 2488320 (4k) blocks.
-The filesystem on /dev/loop2p2 is now 2488320 (4k) blocks long.
+Resizing the filesystem on /dev/loop2p2 to 2490112 (4k) blocks.
+The filesystem on /dev/loop2p2 is now 2490112 (4k) blocks long.
 
 Expansion complete.
 [cleanup] Forcing release of ./bootpart...
-Generating GRUB entry: /mnt/realimages/My_New_OS_pi4/Grub_My_New_OS_pi4.cfg
+Generating GRUB entry: /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4_grub.cfg
 GRUB entry written to: Grub_My_New_OS_pi4.cfg
-Image creation completed successfully.
-Directory: /mnt/realimages/My_New_OS_pi4
-total 6332204
--rwxr-xr-x 1 root root        1247 Dec  4 14:40 config.txt
--rw-r--r-- 1 root root        1009 Apr 10 14:46 Grub_My_New_OS_pi4.cfg
--rwxr-xr-x 1 root root         183 Apr 10  2026 My_New_OS_pi4.cmdline
--rw-r--r-- 1 root root       81495 Apr 10 14:46 My_New_OS_pi4.dtb
--rw-r--r-- 1 root root 10737418240 Apr 10 14:46 My_New_OS_pi4.img
--rwxr-xr-x 1 root root    22480912 Dec  4 14:49 My_New_OS_pi4.initrd
--rwxr-xr-x 1 root root     9678820 Dec  4 14:39 My_New_OS_pi4.kernel
--rw-r--r-- 1 root root         128 Apr 10 14:46 untreated_config.txt
+Running customisation (may overwrite generated grub entry)...
+ sudo ./deploy_custom_files.py /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4.img
+[detect] OS: ubuntu, VERSION_ID: 25
+[info] OS=ubuntu  version=25  (numeric 25.0)
+[info] UUIDs: {1: '0808-11DE', 2: 'c418dc3c-288d-475d-b6d2-48008dea7829'}
+[match] Using files from: /home/pi/Pi_Multiboot/create_images/custom_files/ubuntu/25+
+
+  Custom files from : /home/pi/Pi_Multiboot/create_images/custom_files/ubuntu/25+
+  Will be copied to : /mnt/realimages/My_New_OS_pi4
+  Prefixed with     : My_New_OS_pi4_
+
+Continue? [Y/n]: Y
+[deploy] Deployed 2 file(s) to /mnt/realimages/My_New_OS_pi4
+[done] Complete.
 ```
-## 4) Insert the contents of the suggested Grub file int grub.cfg
+## 4) Insert the contents of the suggested Grub file into grub.cfg
 - If using the Multiboot_Admin os and you have mounted the target partitionusing mountdrives.sh you are already in a position to do this.
+- Otherwise you have to insert the device that you will be using and mount it.
+  The grub.cfg file that needs updating will be  <Mount>/efi/boot/grub.cfg
+- Note that it may, in any case be preferable to update /mnt/realboot/efi/boot/grub.cfg using a text editor like nano, rather
+  than the commands below, especially if you wish to position the entry in the grub menu
 ```
 sudo cp /mnt/realboot/efi/boot/grub.cfg /mnt/realboot/efi/boot/grub.cfg.bak
-sudo cat /mnt/realimages/My_New_OS_pi4/Grub_My_New_OS_pi4.cfg | sudo tee -a /mnt/realboot/efi/boot/grub.cfg
+sudo cat /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4_grub.cfg | sudo tee -a /mnt/realboot/efi/boot/grub.cfg
 ```
-Otherwise you have to insert the device that you will be using and mount it
-the grub.cfg file that needs updating will be  <Mount>/efi/boot/grub.cfg
+
 ## 5) Unmount the partitions cleanly
 With the Multiboot_Admin os use
 ```

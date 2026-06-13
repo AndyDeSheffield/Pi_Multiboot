@@ -15,8 +15,8 @@ Be **very** careful to chose the right removable disk when running the install p
  
 ```  
 cd ~
-wget https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/Version_0.5_alpha/Pi_Multiboot_v0.5.tar.gz
-tar -xzf Pi_Multiboot_v0.5.tar.gz
+wget https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/latest/Pi_Multiboot.tar.gz
+tar -xzf Pi_Multiboot.tar.gz
 ```
  2. plug in the target USB key if you haven't already done so
  3. Identify your target USB key **carefully** using the multiboot-build.sh -l 
