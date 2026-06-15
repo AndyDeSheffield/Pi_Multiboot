@@ -21,28 +21,33 @@ if [ $# -ne 1 ] || [ "$1" = "-h" ] || [ "${1:0:5}" != "/dev/" ]; then
 fi
 
 
-#Identify the Images partition
-TARGET="$(lsblk -nr $1  -o NAME,LABEL |awk '$2=="IMAGES"{print $1}')"
+#Identify the Images partition (WSL-safe)
+TARGET="$(blkid -o device -t LABEL=IMAGES $1*)"
 if [ -z "$TARGET" ]; then
     echo "No IMAGES partition found on $1"
     exit 1
 fi
-TARGET="/dev/$TARGET"
+
 echo "IMAGES partition identified as $TARGET"
 
 # Mount the target partition and restore the Admin disk archive
 echo "Creating mountpoint and mounting $TARGET as /mnt/realimages"
 sudo mkdir -p /mnt/realimages
-sudo mount $TARGET /mnt/realimages
+if mountpoint -q /mnt/realimages; then
+    echo "/mnt/realimages already mounted, skipping mount"
+else
+    sudo mount "$TARGET" /mnt/realimages
+fi
+
 echo "Fetching Admin image $ARCHIVE -> /mnt/realimages/staging/"
 sleep 3
 CURRENTDIR=$PWD
 sudo mkdir -p /mnt/realimages/staging
 cd /mnt/realimages/staging
-sudo wget -q --show-progress "https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/$RELEASE/$ARCHIVE"
+sudo wget -q --show-progress "https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/${RELEASE}/MultiBoot_Admin_os.tar.gz"
 echo "Restoring $ARCHIVE into /mnt/realimages"
 echo "This will take a long time even after the progress dots stop. Do not cancel"
-sudo tar -xzf  "$ARCHIVE" -C /mnt/realimages --checkpoint=.5000
+sudo tar -xzf  "${ARCHIVE}" --no-same-owner -C /mnt/realimages --checkpoint=.5000
 sync
 echo "Restore complete. Unmounting and removing mount directory"
 cd $CURRENTDIR

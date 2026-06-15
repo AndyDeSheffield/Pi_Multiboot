@@ -254,8 +254,6 @@ fi
 
 # Require root now
 require_root
-BOOTSUFFIX="${MODEL:0:3}"
-BOOTSUFFIX="${BOOTSUFFIX^^}"
 
 # ------------------------------------------------------------
 #  WIPE + PARTITION
@@ -266,7 +264,7 @@ parted -s "$TARGET" mklabel gpt
 CURRENT_START="$START"
 
 if [ "$BOOT_REQ" -eq 1 ]; then
-    parted -s "$TARGET" mkpart "BOOT${BOOTSUFFIX}" fat32 "$CURRENT_START" "$BOOT_END"
+    parted -s "$TARGET" mkpart REALBOOT fat32 "$CURRENT_START" "$BOOT_END"
     CURRENT_START="$BOOT_END"
 fi
 
@@ -292,7 +290,7 @@ mkfs_safe() {
 }
 
 if [ "$BOOT_REQ" -eq 1 ]; then
-    mkfs_safe mkfs.vfat -F32 -n "BOOT${BOOTSUFFIX}" "${TARGET}${PARTNUM}"
+    mkfs_safe mkfs.vfat -F32 -n "BOOT${MODEL:0:3}" "${TARGET}${PARTNUM}"
     PARTNUM=$((PARTNUM+1))
 fi
 
@@ -319,7 +317,7 @@ if [ "$BOOT_REQ" -eq 1 ]; then
     echo "Extracting $BOOT_TARBALL..."
     mkdir -p /mnt/realboot
     mount "${TARGET}${PARTNUM}" /mnt/realboot
-    tar -xzf "$BOOT_TARBALL" -C /mnt/realboot
+    tar -xzf "$BOOT_TARBALL" --no-same-owner -C /mnt/realboot
     umount /mnt/realboot
     PARTNUM=$((PARTNUM+1))
 fi
@@ -328,7 +326,7 @@ if [ "$SYSTEM_REQ" -eq 1 ]; then
     echo "Extracting system.tar.gz..."
     mkdir -p /mnt/system
     mount "${TARGET}${PARTNUM}" /mnt/system
-    tar -xzf system.tar.gz -C /mnt/system
+    tar -xzf system.tar.gz --no-same-owner -C /mnt/system
     umount /mnt/system
     PARTNUM=$((PARTNUM+1))
 fi

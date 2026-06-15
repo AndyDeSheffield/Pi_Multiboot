@@ -1,0 +1,16 @@
+@page {
+    size: A4;
+    margin: 15mm;
+}
+
+body {
+    font-family: "Inter", "Segoe UI", "Roboto", sans-serif;
+    font-size: 11pt;
+    line-height: 1.45;
+    color: #111;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}

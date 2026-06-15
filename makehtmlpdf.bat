@@ -2,22 +2,30 @@
 setlocal
 
 REM %1 = base name without extension (e.g. README)
-
 if "%1"=="" (
-    echo Usage: makepdf README
+    echo Usage: makehtmlpdf README
     exit /b 1
 )
 
-set BASE=%1
+set BASE="%~dp0%1"
+echo Processing %BASE%
 
-REM Convert Markdown → HTML
-"C:\Program Files\Pandoc\Pandoc" -f gfm "%BASE%.md" -o "%BASE%.html"
+REM --- Start MiniWeb silently in background ---
+echo Starting MiniWeb...
+start "" /min cmd /c "s:\miniweb\miniweb.exe -p 80 -r S:\pi\Pi_Multiboot\documentation_images -l s:\miniweb\logs -m 5 -d 1"
 
-REM Convert HTML → PDF with wkhtmltopdf
-"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe" ^
-  --user-style-sheet pdf.css ^
-  --margin-top 10mm --margin-bottom 10mm --margin-left 10mm --margin-right 10mm ^
-  --no-stop-slow-scripts ^
-  "%BASE%.html" "%BASE%.pdf"
+REM Give MiniWeb time to bind to port 80
+timeout /t 3 >nul
 
+REM --- Convert Markdown → HTML ---
+"C:\Program Files\Pandoc\Pandoc.exe" -f gfm "%BASE%.md" --lua-filter=localize-images.lua -o "%BASE%.html"
+
+REM --- Convert HTML → PDF using WeasyPrint ---
+weasyprint "%BASE%.html" "%BASE%.pdf" -s pdf.css
+
+REM --- Stop MiniWeb cleanly ---
+echo Stopping MiniWeb...
+taskkill /IM miniweb.exe /F >nul 2>&1
+
+echo Done.
 endlocal
