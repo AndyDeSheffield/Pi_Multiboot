@@ -1,0 +1,280 @@
+<h1 id="how-to-install-images">How to Install Images</h1>
+<h2 id="introduction">Introduction</h2>
+<p>This guide assumes the use of the provided Multiboot_Admin
+environment to install additional images, although the same approach is
+used to install images using an external Linux os. This os should
+auto-login with two console screens but in a gui environment. For info
+<strong>user=pi, password=pi</strong></p>
+<h2 id="1-install-or-update-the-multiboot-toolchain">1) Install or
+update the Multiboot Toolchain</h2>
+<ul>
+<li>If using the Multiboot_Admin os then this toolchain comes
+pre-installed at /home/pi/Pi_Multiboot. However you should make sure
+that it is up to date by running</li>
+</ul>
+<pre><code>cd ~
+./update_imager.sh</code></pre>
+<ul>
+<li>If using an externel os you can fetch and then run the same
+script</li>
+</ul>
+<pre><code>cd ~
+wget https://raw.githubusercontent.com/AndyDeSheffield/Pi_Multiboot/refs/heads/main/tools/update_imager.sh
+sudo chmod +x update_imager.sh
+./update_imager.sh</code></pre>
+<h2 id="2-mount-the-images-partition-which-will-receive-your-new-os">2)
+Mount the images partition which will receive your new os</h2>
+<ul>
+<li>When using the Multiboot_Admin os this is most likely your current
+images partition. In this case it can be mounted using the script in the
+Pi_Multiboot/tools directory</li>
+</ul>
+<pre><code>Pi_Multiboot/tools/mountdrives.sh</code></pre>
+<p>your target partition will be /mnt/realimages</p>
+<ul>
+<li>Otherwise you will likely be installing to an external usb key
+partition (example /dev/sdb3) so</li>
+</ul>
+<pre><code>mkdir -p ~/realimages
+sudo mount /dev/sdb3 ~/realimages</code></pre>
+<p>your target partition is of course ~/realimages</p>
+<h2 id="3-run-the-image-creation-tool">3) Run the image creation
+tool</h2>
+<ul>
+<li>First check the help</li>
+<li>Note that after each action the imaging tool gives the option to
+continue or abort (which backs out previous steps)</li>
+</ul>
+<pre><code>cd ~/Pi_Multiboot/create_images
+./install_image.sh -h
+
+Usage: $0 -r=&lt;root_mount&gt; -n=&lt;name_of_image&gt; -m=&lt;pi_model&gt; -s=&lt;size&gt; [-e] [-h]
+  -r=&lt;root_mount&gt;    Root of mounted image disk (e.g. -r=/mnt/realimages)
+  -n=&lt;name&gt;          Name of image (letters, numbers, &#39;-&#39;, &#39;_&#39;)
+  -m=&lt;pi_model&gt;      Pi model (e.g. pi3b,pi3b+,pi4, pi5)
+  -s=&lt;size&gt;          Image size (e.g. 10G)
+  -c                 Apply custom files to the image directory (will not hurt if there are no custom files)
+  -e                 Expand root filesystem (only if exactly 2 partitions exist)
+  -h                 Show this help
+  Note that the script needs to be run with sudo and relies on the device tree compiler (DTC) being available</code></pre>
+<ul>
+<li></li>
+<li>Run the tool as sudo with the appropriate parameters</li>
+</ul>
+<pre><code>sudo ./install_image.sh -r=/mnt/realimages -n=My_New_OS -m=pi4 -s=10G -e -c</code></pre>
+<ol type="1">
+<li>Step 1 creates the blank .img file on the root Mount</li>
+</ol>
+<pre><code>Step 1: Creating target directory and blank image...
+Created image: /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4.img (size 10G)
+
+Step 1 completed. Continue (c) or Abort (a)? [c/a]:</code></pre>
+<ol start="2" type="1">
+<li>Step 2 runs a modified version of the raspi-imager that accepts loop
+mounts as targets</li>
+</ol>
+<pre><code>Continuing...
+Step 2: Loop-mounting image and running Raspberry Pi Imager...
+Loop device: /dev/loop2
+Launching Raspberry Pi Imager...
+Refreshing loop partitions...
+Reattached loop device: /dev/loop2
+</code></pre>
+<p>Follow the usual imaging process selecting the loop device attached
+to your image as the target</p>
+<div>
+-  Select Pi model <br>
+    <img src="http://127.0.0.1/pi_imager.1.jpg" style="margin: 10px;  width:50%; height:50%"/> <br>
+-  Select Operating System <br>
+    <img src="http://127.0.0.1/pi_imager.2.jpg" style="margin: 10px;  width:50%; height:50%"/> <br>
+    Select Target loop --- <b>Be careful NOT to select the SSD or Hard drive itself!</b> <br>
+    <img src="http://127.0.0.1/pi_imager.3.jpg" style="margin: 10px;  width:50%; height:50%"/> <br>
+-  Configure if desired <br>
+    <img src="http://127.0.0.1/pi_imager.4.jpg" style=" margin: 10px; width:45%; height:45%"/>
+    <img src="http://127.0.0.1/pi_imager.5.jpg" style=" margin: 10px; width:45%; height:45%"/>
+    <img src="http://127.0.0.1/pi_imager.6.jpg" style=" margin: 10px; width:45%; height:45%"/>
+    <img src="http://127.0.0.1/pi_imager.7.jpg" style=" margin: 10px; width:45%; height:45%"/>
+    <img src="http://127.0.0.1/pi_imager.8.jpg" style=" margin: 10px; width:45%; height:45%"/> <br>
+-  Write Image <br>
+    <img src="http://127.0.0.1/pi_imager.9.jpg" style=" margin: 10px; width:50%; height:50%"/> <br>
+- Confirm Write <br>
+    <img src="http://127.0.0.1/pi_imager.10.jpg" style=" margin: 10px; width:50%; height:50%"/> <br>
+- Writing <br>
+    <img src="http://127.0.0.1/pi_imager.11.jpg" style="margin: 10px; width:50%; height:50%"/> <br>
+- Finish <br>
+    <img src="http://127.0.0.1/pi_imager.12.jpg" style=" margin: 10px;width:50%; height:50%"/> <br>
+</div>
+
+<pre><code>Step 2 completed. Continue (c) or Abort (a)? [c/a]:</code></pre>
+<ol start="3" type="1">
+<li>Step 3 creates a dtb file with all the overlays and properties
+specified in the config.txt of the target boot partition merged in.
+<ul>
+<li>It copies that dtb, along with the target kernel and any initramfs
+into a directory /target_name on the root mount.</li>
+<li>A suitable Grub entry file is also created</li>
+<li>The kernel cmdline used in the official image is extracted for
+reference. Use the "extras" variable in the grub config to add any
+desired values.</li>
+<li>The config.txt from the original boot partition is extracted for
+reference and a file "untreated_config.txt" is created showing lines
+that it has not been possible to process.</li>
+<li>If the -e option is selected the root partition of the new image
+will be expanded to fill the img file</li>
+<li>If the -c option is selected then custom files for the image will be
+copied into the directory where the img file is hosted. Details of what
+will be copied are displayed and you can confirm the copy before it is
+made</li>
+</ul></li>
+</ol>
+<pre><code>Continuing...
+Step 3: Extracting DTB and kernel...
+Handling uefi fixes. Installing cpufix.dtbo, dmafix.dtbo and uefi_fixes.txt
+Model: pi4 (index 5)
+Boot directory: ./bootpart
+Will output to : /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4{.dtb,.kernel,.cmdline,.initrd}
+Any kernel, cmdline and initrd files will be copied (-x specified.)
+
+
+UNTREATED CONFIG LINES stored in  /mnt/realimages/My_New_OS_pi4/untreated_config.txt
+uefi_fixes.txt found and will be processed after config.txt
+COPYING FULL Config.txt ./bootpart/config.txt to /mnt/realimages/My_New_OS_pi4/config.txt
+COPYING SPECIFIED KERNEL ./bootpart/current/vmlinuz to /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4.kernel
+COPYING INITRAMFS ./bootpart/current/initrd.img to /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4.initrd
+SET_BASE_PROPERTY (group 0): audio=on
+SET_BASE_PROPERTY (group 1): i2c_arm=on
+SET_BASE_PROPERTY (group 2): spi=on
+SET_BASE_PROPERTY (group 3): watchdog=on
+Warning: unknown base dtparam &#39;watchdog&#39; ignored
+LOAD_OVERLAY (group 4): ./bootpart/current/overlays/vc4-kms-v3d-pi4.dtbo
+APPLY_OVERLAY (group 4): ./bootpart/current/overlays/vc4-kms-v3d-pi4.dtbo
+LOAD_OVERLAY (group 5): ./bootpart/current/overlays/dwc2.dtbo
+APPLY_OVERLAY (group 5): ./bootpart/current/overlays/dwc2.dtbo
+LOAD_OVERLAY (group 6): ./bootpart/current/overlays/miniuart-bt.dtbo
+APPLY_OVERLAY (group 6): ./bootpart/current/overlays/miniuart-bt.dtbo
+LOAD_OVERLAY (group 7): ./bootpart/current/overlays/cpufix.dtbo
+APPLY_OVERLAY (group 7): ./bootpart/current/overlays/cpufix.dtbo
+LOAD_OVERLAY (group 8): ./bootpart/current/overlays/dmafix.dtbo
+APPLY_OVERLAY (group 8): ./bootpart/current/overlays/dmafix.dtbo
+COPYING MERGED DTB to /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4.dtb
+Files sucessfully created
+Step 3.7: Optional expansion...
+Expanding root filesystem...
+Model: Loopback device (loopback)
+Disk /dev/loop2: 10.7GB
+Sector size (logical/physical): 512B/512B
+Partition Table: msdos
+Disk Flags:
+
+Number  Start   End     Size    Type     File system  Flags
+ 1      1049kB  538MB   537MB   primary  fat32        boot, lba
+ 2      538MB   8922MB  8384MB  primary  ext4
+
+e2fsck 1.47.2 (1-Jan-2025)
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 3A: Optimizing directories
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+
+writable: ***** FILE SYSTEM WAS MODIFIED *****
+writable: 121987/512064 files (0.1% non-contiguous), 1377596/2046785 blocks
+resize2fs 1.47.2 (1-Jan-2025)
+Resizing the filesystem on /dev/loop2p2 to 2490112 (4k) blocks.
+The filesystem on /dev/loop2p2 is now 2490112 (4k) blocks long.
+
+Expansion complete.
+[cleanup] Forcing release of ./bootpart...
+Generating GRUB entry: /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4_grub.cfg
+GRUB entry written to: Grub_My_New_OS_pi4.cfg
+Running customisation (may overwrite generated grub entry)...
+ sudo ./deploy_custom_files.py /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4.img
+[detect] OS: ubuntu, VERSION_ID: 25
+[info] OS=ubuntu  version=25  (numeric 25.0)
+[info] UUIDs: {1: &#39;0808-11DE&#39;, 2: &#39;c418dc3c-288d-475d-b6d2-48008dea7829&#39;}
+[match] Using files from: /home/pi/Pi_Multiboot/create_images/custom_files/ubuntu/25+
+
+  Custom files from : /home/pi/Pi_Multiboot/create_images/custom_files/ubuntu/25+
+  Will be copied to : /mnt/realimages/My_New_OS_pi4
+  Prefixed with     : My_New_OS_pi4_
+
+Continue? [Y/n]: Y
+[deploy] Deployed 2 file(s) to /mnt/realimages/My_New_OS_pi4
+[done] Complete.</code></pre>
+<h2
+id="4-insert-the-contents-of-the-suggested-grub-file-into-grubcfg">4)
+Insert the contents of the suggested Grub file into grub.cfg</h2>
+<ul>
+<li>If using the Multiboot_Admin os and you have mounted the target
+partitionusing mountdrives.sh you are already in a position to do
+this.</li>
+<li>Otherwise you have to insert the device that you will be using and
+mount it. The grub.cfg file that needs updating will be
+<Mount>/efi/boot/grub.cfg</li>
+<li>Note that it may, in any case be preferable to update
+/mnt/realboot/efi/boot/grub.cfg using a text editor like nano, rather
+than the commands below, especially if you wish to position the entry in
+the grub menu</li>
+</ul>
+<pre><code>sudo cp /mnt/realboot/efi/boot/grub.cfg /mnt/realboot/efi/boot/grub.cfg.bak
+sudo cat /mnt/realimages/My_New_OS_pi4/My_New_OS_pi4_grub.cfg | sudo tee -a /mnt/realboot/efi/boot/grub.cfg</code></pre>
+<h2 id="5-unmount-the-partitions-cleanly">5) Unmount the partitions
+cleanly</h2>
+<p>With the Multiboot_Admin os use</p>
+<pre><code>~/Pi_Multiboot/tools/unmountdrives.sh</code></pre>
+<h2 id="6-test">6) Test</h2>
+<div>
+- Grub entry <br>
+    <img src="http://127.0.0.1/bootimg.jpg" style="margin: 10px; width:70%; height:70%"/> <br>
+- After Boot <br>
+    <img src="http://127.0.0.1/mainscreen.jpg" style="margin: 10px; width:70%; height:70%"/> <br>
+
+</div>
+
+<ul>
+<li>Note that
+<ul>
+<li>First boot of many OSes can take a long time</li>
+<li>There will be some errors in the startup mainly due to upower (not
+sure what this is)</li>
+<li>There is often an unexpected reboot after the very first boot. This
+may be the Raspbian resize functionality kicking in, I'm not sure.</li>
+</ul></li>
+</ul>
+<h2 id="conclusion">Conclusion</h2>
+<p>All the 64 bit Raspian images and the 64 bit Ubuntu images that I've
+tested booted using this technique. All 4 processors are present and
+there is working sound but that's all that I've tested.</p>
+<h4 id="footnote">Footnote</h4>
+<p>Using some slight variations I've also managed to boot :-</p>
+<ul>
+<li><strong>LibreELECT</strong> (v21.3 and only for the pi4 currently,
+due to lack of pi5 hardware and LibreELECT for the pi3 being 32 bit)
+<ul>
+<li>Use the same process as above to create the image</li>
+<li>This then requires a small overlay initramfs (to include a custom
+"platform_init" file that loop mounts the LibreELECT image and also a
+custom Grub entry. <a
+href="https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/Version_0.5_alpha/LibreELECT.zip">LibreELECT
+files here</a></li>
+<li>Unzip the archive into the same directory as that of the LibreELECT
+img file</li>
+<li>platform_init is included for info only. It isn't needed</li>
+<li>If the version of the LibreELECT image changes on the raspi-imager
+you will have to update the grub entry to reference the new boot=UUID
+and disk=UUID entries in the grub "rootopts" variable.</li>
+</ul></li>
+<li><strong>Fedora</strong>
+(Fedora-Workstation-Disk-43-1.6.aarch64.raw.xz)
+<ul>
+<li>[From the official site] ( <a
+href="https://fedoraproject.org/workstation/download/">https://fedoraproject.org/workstation/download/</a>)</li>
+<li>This also needs a specific grub entry and initramfs overlay.</li>
+<li>The build process is much more manual. I'll provide details if
+anyone is interested</li>
+</ul></li>
+<li>I'm looking to see if I can do anything with
+<strong>Lineage</strong> but it would need quite a lot of detective
+work</li>
+</ul>
