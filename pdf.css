@@ -1,21 +1,27 @@
 @page {
     size: A4;
-    margin: 10mm;
+    margin: 5mm;
 }
 body {
     font-family: Arial, sans-serif;
-    font-size: 14pt;
+    font-size: 10pt;
     line-height: 1.5;
-    margin: 10mm;
+    margin: 5mm;
 }
-
-h1, h2, h3 {
+h1, h2, h3, h4, h5 {
     font-family: Arial, sans-serif;
     margin-top: 14pt;
     margin-bottom: 6pt;
 }
 
+h1 { font-size: 20pt; }
+h2 { font-size: 16pt; }
+h3 { font-size: 14pt; }
+h4 { font-size: 12pt; }
+h5 { font-size: 11pt; }
+h6 { font-size: 10pt; }
+
 pre, code {
     font-family: Consolas, monospace;
-    font-size: 12pt;
+    font-size: 9pt;
 }

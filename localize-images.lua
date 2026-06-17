@@ -6,11 +6,12 @@ local base_url = "http://127.0.0.1/"
 function Image(img)
   local url = img.src
   if url:match("githubusercontent%.com") or url:match("github%.com") then
-    local filename = url:match("([^/%?]+)$")
+    local filename = url:match("([^/]+)$"):gsub("%?.*$", "")
     img.src = base_url .. filename
   end
   return img
 end
+
 
 function RawInline(el)
   if el.format == "html" then

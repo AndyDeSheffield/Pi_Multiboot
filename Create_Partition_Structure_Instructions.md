@@ -10,7 +10,7 @@ Be **very** careful to chose the right removable disk when running the install p
  -  A USB key or a microSD card in a USB holder of at least 8GB capacity. If this is to be your main multiboot repository it is recommended  be at least 128GB, depending upon the number of OS that you wish to install.
  
  ### Installation Steps
- ##### Base USB Key
+ #### Base USB Key
  1. Download the Pi_MultiBoot.tar.gz file from my repository and unpack it.
  
 ```  
@@ -42,10 +42,10 @@ cd ~/Pi_Multiboot/create_structure
 sudo ./multiboot-build.sh -t=/dev/sdb -m=pi4 -b -s -i 
 ```
  6. You should now have a 3 partition USB key. 
- ##### Admin OS Image
+ #### Admin OS Image
  For convenience I've provided a prepared admin os based on Raspi_Lite but with a minimal Xserver and console. There is a pre-installed grub entry that boots it. 
  If you want to install this (recommended) continue on.
- ###### Automated Installation
+ ##### Automated Installation
   1. Run the included installation script, replacing /dev/sdb with your newly installed disk identifier ( the -l options lists current disks for a safety check)
 ```
   cd ~/Pi_Multiboot/create_structure
@@ -55,7 +55,7 @@ sudo ./multiboot-build.sh -t=/dev/sdb -m=pi4 -b -s -i
 ```
   ./install_multiboot_admin_os.sh /dev/sdb
 ```
- ###### Manual Installation
+ ##### Manual Installation
  If for any reason the automated installation didn't work or if you prefer to know what's going on here are the manual Steps (Assumes IMAGES partition is /dev/sdb3)
  
   1. Mount the IMAGES partition of the key
@@ -79,14 +79,14 @@ sudo umount /mnt/realimages
 sudo rmdir /mnt/realimages
 
 ```
- ##### Testing
+ #### Testing
  Transfer the usb key to the target device and try to boot. If it is a microSD card you can optionally put it into the slot on the pi.
  **Note that the BOOT partition on this key must be the only one in the system.** 
  Also only one SYSTEM partition is allowed.You can have any number of IMAGES partitions
  
  **For the MultiBoot Admin OS, User=pi, Password=pi**
  
- ##### Split Disks
+ #### Split Disks
 Notes on splitting the architecture over different disks. 
 This quite simply comes down to repeating steps 2 to 6 of the BASE USB section of this  guide
 but specifying less partitions at stages 4 and 5.

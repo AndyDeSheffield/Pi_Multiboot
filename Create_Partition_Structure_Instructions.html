@@ -1,0 +1,108 @@
+<h1 id="installation-instructions">Installation Instructions</h1>
+<p>This set of instructions will create a 3 partition version of the
+architecture all on one disk. See the end of the document for details on
+how to create the various partitions on different disks Be
+<strong>very</strong> careful to chose the right removable disk when
+running the install program.</p>
+<h3 id="you-will-need">You will need</h3>
+<ul>
+<li>A functioning <strong>Linux</strong> operating system which has
+access to USB devices. For Windows users you cannot use a Hyper-V vm,
+nor WSL as these do not have USB access. The best solution is to install
+Ubuntu on a usb key and boot it into "Try Before You Install" mode.</li>
+<li>A USB key or a microSD card in a USB holder of at least 8GB
+capacity. If this is to be your main multiboot repository it is
+recommended be at least 128GB, depending upon the number of OS that you
+wish to install.</li>
+</ul>
+<h3 id="installation-steps">Installation Steps</h3>
+<h4 id="base-usb-key">Base USB Key</h4>
+<ol type="1">
+<li>Download the Pi_MultiBoot.tar.gz file from my repository and unpack
+it.</li>
+</ol>
+<pre><code>cd ~
+wget https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/latest/Pi_Multiboot.tar.gz
+tar -xzf Pi_Multiboot.tar.gz</code></pre>
+<ol start="2" type="1">
+<li>plug in the target USB key if you haven't already done so</li>
+<li>Identify your target USB key <strong>carefully</strong> using the
+multiboot-build.sh -l command. Note that minimal help is available with
+multiboot-build.sh -h</li>
+</ol>
+<pre><code>cd ~/Pi_Multiboot/create_structure
+./multiboot-build.sh -h 
+./multiboot-build.sh -l</code></pre>
+<ol start="4" type="1">
+<li>Identify the device that you wish to image here I'll assume it is
+<strong>/dev/sdb</strong> (replace as necessary) and that we are
+building for a pi4 (again replace as necessary run with -h to see
+models) Then for peace of mind I suggest that you do a dry run of the
+creation process using the -n option Also we will stick to the default
+partition sizes</li>
+</ol>
+<pre><code>./multiboot-build.sh -n -t=/dev/sdb -m=pi4 -b -s -i </code></pre>
+<ol start="5" type="1">
+<li>If you are happy then rerun for real. This needs sudo
+privileges</li>
+</ol>
+<pre><code>sudo ./multiboot-build.sh -t=/dev/sdb -m=pi4 -b -s -i </code></pre>
+<ol start="6" type="1">
+<li>You should now have a 3 partition USB key.</li>
+</ol>
+<h4 id="admin-os-image">Admin OS Image</h4>
+<p>For convenience I've provided a prepared admin os based on Raspi_Lite
+but with a minimal Xserver and console. There is a pre-installed grub
+entry that boots it. If you want to install this (recommended) continue
+on.</p>
+<h5 id="automated-installation">Automated Installation</h5>
+<ol type="1">
+<li>Run the included installation script, replacing /dev/sdb with your
+newly installed disk identifier ( the -l options lists current disks for
+a safety check)</li>
+</ol>
+<pre><code>  cd ~/Pi_Multiboot/create_structure
+  ./install_multiboot_admin_os.sh -l </code></pre>
+<p>Then when happy (chosing the right disk)</p>
+<pre><code>  ./install_multiboot_admin_os.sh /dev/sdb</code></pre>
+<h5 id="manual-installation">Manual Installation</h5>
+<p>If for any reason the automated installation didn't work or if you
+prefer to know what's going on here are the manual Steps (Assumes IMAGES
+partition is /dev/sdb3)</p>
+<ol type="1">
+<li>Mount the IMAGES partition of the key</li>
+</ol>
+<pre><code>sudo mkdir -p /mnt/realimages
+sudo mount /dev/sdb3 /mnt/realimages
+cd /mnt/realimages/staging/</code></pre>
+<ol start="2" type="1">
+<li>Fetch the admin tarball, unpack it and install the image directory
+(update the release directory and name as necessary)</li>
+</ol>
+<pre><code> wget https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/latest/MultiBoot_Admin_os.tar.gz
+ tar -xzf MultiBoot_Admin_os.tar.gz -C /mnt/realimages
+ sync</code></pre>
+<ol start="3" type="1">
+<li>Unmount the partition and optionally remove the mountpoint</li>
+</ol>
+<pre><code>cd ~
+sudo umount /mnt/realimages
+sudo rmdir /mnt/realimages
+</code></pre>
+<h4 id="testing">Testing</h4>
+<p>Transfer the usb key to the target device and try to boot. If it is a
+microSD card you can optionally put it into the slot on the pi.
+<strong>Note that the BOOT partition on this key must be the only one in
+the system.</strong> Also only one SYSTEM partition is allowed.You can
+have any number of IMAGES partitions</p>
+<p><strong>For the MultiBoot Admin OS, User=pi, Password=pi</strong></p>
+<h4 id="split-disks">Split Disks</h4>
+<p>Notes on splitting the architecture over different disks. This quite
+simply comes down to repeating steps 2 to 6 of the BASE USB section of
+this guide but specifying less partitions at stages 4 and 5. For example
+to just put the Boot partiton on a disk run</p>
+<pre><code>sudo ./multiboot-build.sh -n -t=/dev/sdb -m=pi4 -b
+sudo ./multiboot-build.sh -t=/dev/sdb -m=pi4 -b</code></pre>
+<p>Then for a second disk with the SYSTEM and IMAGES partitions</p>
+<pre><code>sudo ./multiboot-build.sh -n -t=/dev/sdb -m=pi4 -s -i
+sudo ./multiboot-build.sh -t=/dev/sdb -m=pi4 -s -i</code></pre>
