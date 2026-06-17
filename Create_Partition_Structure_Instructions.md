@@ -46,11 +46,9 @@ sudo ./multiboot-build.sh -t=/dev/sdb -m=pi4 -b -s -i
  For convenience I've provided a prepared admin os based on Raspi_Lite but with a minimal Xserver and console. There is a pre-installed grub entry that boots it. 
  If you want to install this (recommended) continue on.
  ###### Automated Installation
-  1. Download the installation script and run it, replacing /dev/sdb with your newly installed disk identifier ( the -l options lists current disks for a safety check)
+  1. Run the included installation script, replacing /dev/sdb with your newly installed disk identifier ( the -l options lists current disks for a safety check)
 ```
-  cd ~
-  wget https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/latest/install_multiboot_admin_os.sh
-  chmod +x install_multiboot_admin_os.sh
+  cd ~/Pi_Multiboot/create_structure
   ./install_multiboot_admin_os.sh -l 
 ```
   Then when happy (chosing the right disk)

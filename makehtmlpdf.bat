@@ -1,14 +1,20 @@
 @echo off
 setlocal
 
-REM %1 = base name without extension (e.g. README)
-if "%1"=="" (
+REM %1 = base name with or without .md
+if "%~1"=="" (
     echo Usage: makehtmlpdf README
     exit /b 1
 )
 
-set BASE="%~dp0%1"
+REM Normalize input: ensure .md extension
+set "INPUT=%~1"
+if /I not "%INPUT:~-3%"==".md" set "INPUT=%INPUT%.md"
+
+REM Build full path without double quotes
+set "BASE=%~dp0%INPUT%"
 echo Processing %BASE%
+
 
 REM --- Start MiniWeb silently in background ---
 echo Starting MiniWeb...
