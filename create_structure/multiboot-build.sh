@@ -319,7 +319,7 @@ if [ "$BOOT_REQ" -eq 1 ]; then
     echo "Extracting $BOOT_TARBALL..."
     mkdir -p /mnt/realboot
     mount "${TARGET}${PARTNUM}" /mnt/realboot
-    tar -xzf "$BOOT_TARBALL"--no-same-owner -C /mnt/realboot
+    tar -xzf "$BOOT_TARBALL" --no-same-owner -C /mnt/realboot
     umount /mnt/realboot
     PARTNUM=$((PARTNUM+1))
 fi
