@@ -86,6 +86,14 @@ sudo rmdir /mnt/realimages
  
  **For the MultiBoot Admin OS, User=pi, Password=pi**
  
+ #### Admin Image Configuration
+ The usual **sudo raspi-config** can be used to configure the image but avoid the following settings. You **will** break it.
+ In particular the auto-logon to an lxterminal/openbox environment (configured in /etc/X11/xinit/xinitrc)
+ - **S5, S6, S7, S9**
+ - **D1 - D4**
+ - **I3**
+ - **A1,A7, maybe A13**
+ - **Maybe Update in the main menu**
  #### Split Disks
 Notes on splitting the architecture over different disks. 
 This quite simply comes down to repeating steps 2 to 6 of the BASE USB section of this  guide
