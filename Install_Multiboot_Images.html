@@ -2,15 +2,15 @@
 <h2 id="introduction">Introduction</h2>
 <p>This guide assumes the use of the provided Multiboot_Admin
 environment to install additional images, although the same approach is
-used to install images using an external Linux os. This os should
-auto-login with two console screens but in a gui environment. For info
-<strong>user=pi, password=pi</strong></p>
+used to install images using an external Linux os. The Multiboot_Admin
+os should auto-login with two console screens but in a gui environment.
+For info <strong>user=pi, password=pi</strong></p>
 <h2 id="1-install-or-update-the-multiboot-toolchain">1) Install or
 update the Multiboot Toolchain</h2>
 <ul>
 <li>If using the Multiboot_Admin os then this toolchain comes
-pre-installed at /home/pi/Pi_Multiboot. However you should make sure
-that it is up to date by running</li>
+pre-installed at /home/pi/Pi_Multiboot. <strong>However you should make
+sure that it is up to date</strong> by running</li>
 </ul>
 <pre><code>cd ~
 ./update_imager.sh</code></pre>
@@ -30,7 +30,7 @@ images partition. In this case it can be mounted using the script in the
 Pi_Multiboot/tools directory</li>
 </ul>
 <pre><code>Pi_Multiboot/tools/mountdrives.sh</code></pre>
-<p>your target partition will be /mnt/realimages</p>
+<p>your target partition will be <strong>/mnt/realimages</strong></p>
 <ul>
 <li>Otherwise you will likely be installing to an external usb key
 partition (example /dev/sdb3) so</li>
@@ -247,23 +247,16 @@ may be the Raspbian resize functionality kicking in, I'm not sure.</li>
 tested booted using this technique. All 4 processors are present and
 there is working sound but that's all that I've tested.</p>
 <h4 id="footnote">Footnote</h4>
-<p>Using some slight variations I've also managed to boot :-</p>
+<p>Using some different variations I've also managed to boot, but which
+use (included) customisation :-</p>
 <ul>
 <li><strong>LibreELECT</strong> (v21.3 and only for the pi4 currently,
 due to lack of pi5 hardware and LibreELECT for the pi3 being 32 bit)
 <ul>
 <li>Use the same process as above to create the image</li>
-<li>This then requires a small overlay initramfs (to include a custom
-"platform_init" file that loop mounts the LibreELECT image and also a
-custom Grub entry. <a
-href="https://github.com/AndyDeSheffield/Pi_Multiboot/releases/download/Version_0.5_alpha/LibreELECT.zip">LibreELECT
-files here</a></li>
-<li>Unzip the archive into the same directory as that of the LibreELECT
-img file</li>
-<li>platform_init is included for info only. It isn't needed</li>
-<li>If the version of the LibreELECT image changes on the raspi-imager
-you will have to update the grub entry to reference the new boot=UUID
-and disk=UUID entries in the grub "rootopts" variable.</li>
+<li>A custom initrd will be added to the boot process to create the
+image loop mount.</li>
+<li>A custom grub entry will be created</li>
 </ul></li>
 <li><strong>Fedora</strong>
 (Fedora-Workstation-Disk-43-1.6.aarch64.raw.xz)
@@ -271,10 +264,39 @@ and disk=UUID entries in the grub "rootopts" variable.</li>
 <li>[From the official site] ( <a
 href="https://fedoraproject.org/workstation/download/">https://fedoraproject.org/workstation/download/</a>)</li>
 <li>This also needs a specific grub entry and initramfs overlay.</li>
-<li>The build process is much more manual. I'll provide details if
+<li>The build process is a bit more manual. I'll provide details if
 anyone is interested</li>
+<li>A custom _extra initrd will be added to the boot process</li>
+<li>A custom grub entry will be created</li>
 </ul></li>
-<li>I'm looking to see if I can do anything with
-<strong>Lineage</strong> but it would need quite a lot of detective
-work</li>
+<li><strong>Lineage</strong> (-23.2-20260128-UNOFFICIAL-KonstaKANG-rpi4
+(includes booting to twrp as a seperate grub entry)
+<ul>
+<li>See seperate document (to be added)</li>
+<li>A custom _extra initrd will be added to the boot process</li>
+<li>A custom grub entry will be created</li>
+</ul></li>
+<li><strong>Ubuntu 26+</strong>
+<ul>
+<li>The Ubuntu team has moved to a much more complex boot process based
+on dracut (which I passionately hate!).</li>
+<li>Use the standard process to install the image (with my version of
+Raspi-Imager)</li>
+<li>A custom _extra initrd will be added to the boot process</li>
+<li>A custom grub entry will be created</li>
+</ul></li>
+<li><strong>Windows</strong>(Version 22H2 for the pi4 only)
+<ul>
+<li>This is Windows from the <a href="https://github.com/pftf">Windows
+on Raspberry</a> project, which I believe has been discontinued in
+favour of an alternative approach using a vm. Windows is native booted
+from a vhd using ntloader.arm64 from the <a
+href="https://github.com/grub4dos/ntloader/releases">ntloader project
+</a>. Unfortunately, of course, the windows.vhd has to be installed on
+an NTFS or ExFAT partition.</li>
+<li>If I was able to publish my Windows vhd without infringing MS
+licensing this would be an easy install. As it is, you have to go
+through a number of different steps, using a variety of tools. I'll
+publish the process if anyone is interested.</li>
+</ul></li>
 </ul>
