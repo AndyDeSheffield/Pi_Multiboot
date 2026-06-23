@@ -215,7 +215,7 @@ With the Multiboot_Admin os use
 	- There is often an unexpected reboot after the very first boot. This may be the Raspbian resize functionality kicking in, I'm not sure.
 
 ##  Conclusion
-All the 64 bit Raspian images and the 64 bit Ubuntu images that I've tested booted using this technique. All 4 processors are present and there is working sound but that's all that I've tested.
+All the 64 bit Raspian images and the 64 bit Ubuntu images (<v26) that I've tested booted using this technique. All 4 processors are present and there is working sound but that's all that I've tested.
 #### Footnote
 Using some different variations I've also managed to boot, but which use (included) customisation :-
 - **LibreELECT** (v21.3 and only for the pi4 currently, due to lack of pi5 hardware and LibreELECT for the pi3 being 32 bit)
