@@ -65,7 +65,7 @@ EOF
 # ------------------------------------------------------------
 list_removable() {
     echo "Removable devices:"
-    lsblk -o NAME,MODEL,SIZE,RM,TYPE | grep "disk"
+    lsblk -o NAME,MODEL,VENDOR,SIZE,RM,TYPE |grep -iv part
 }
 
 # ------------------------------------------------------------
