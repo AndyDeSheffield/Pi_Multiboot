@@ -83,10 +83,27 @@ sudo rmdir /mnt/realimages
  Transfer the usb key to the target device and try to boot. If it is a microSD card you can optionally put it into the slot on the pi.
  **Note that the BOOT partition on this key must be the only one in the system.** 
  Also only one SYSTEM partition is allowed.You can have any number of IMAGES partitions
+ ##### First boot
+ - It is recommended to put the completed USB device into a USB2 socket on the Pi initially. The UEFI software is very susceptible to creating a "synchronous error"
+ and refusing to boot if any change to the configuration is made and using USB2 seems to slightly reduce the risk of this.
+ - During first boot press the Escape key to get into the UEFI configuration app. Then change the following settings:-
+   - (verify) Device Manager=>Raspberry Pi Configuration=>Advanced Configuration=>Limit Ram to 3GB=disabled
+   - Boot Maintenance Manager=>Boot Options=>Delete Boot Option=> Select all unnecessary boot options for deletion
+   - Boot Maintenance Manager=>Boot Options=>Boot Order=> Put your desired boot device at the top of the list
+ - Make sure that your changes are saved after each step. Got back to the main menu, select reset (hold your breath) and let it boot. 
+ - One of two things will happen
+   - You will get a synchronous error
+     - In this case put your USB drive in a Working windows or Linux PC, Mount the first 
+Partiton (called BOOTPIx), copy RPI_EFD.sav to RPI_EFD.fd and try again
+   - You will continue through to the Grub menu with one entry for the admin OS. At this point you can shut down (by pulling the power). Put the key into
+a working PC, mount the boot partition as above but this time copy RPI_EFD.fd to RPI_EFD.sav to give yourself a fully configured
+backup. After this you can put the USB key in a USB 3 slot if you have any and allow the PI to boot the admin os.
+**Always take precautions and make sure that you have a backup when running the UEFI configuration program.**   
  
- **For the MultiBoot Admin OS, User=pi, Password=pi**
  
  #### Admin Image Configuration
+ **For the MultiBoot Admin OS, User=pi, Password=pi** but it should auto-logon
+
  The usual **sudo raspi-config** can be used to configure the image but avoid the following settings. You **will** break it.
  In particular the auto-logon to an lxterminal/openbox environment (configured in /etc/X11/xinit/xinitrc)
  - **S5, S6, S7, S9**
